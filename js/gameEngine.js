@@ -31,7 +31,7 @@ const Game = {
     },
 
     // Physics
-    gravityForce: -0.8,
+    gravityForce: -2,
 
     // Controls
     keys: {
@@ -95,8 +95,6 @@ const Game = {
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS, this.player.speed)
         this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS, this.player.speed)
 
-        console.log(this.background.left.imageInstance)
-
         // We set the event listeners
         this.setEventHandlers()
 
@@ -109,8 +107,6 @@ const Game = {
         this.canvas.obejectInDOM.height = this.canvas.size.height
 
         this.canvas.baseLine = this.canvas.size.height + this.canvas.baseLine
-
-        console.log(this.canvas.baseLine)
 
 
     },
@@ -143,25 +139,37 @@ const Game = {
             this.clearAll()
 
             // We change the sprite
-            if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
 
-                if (this.player.imageInstance.frameIndex === 0) {
+            if (this.player.isTouchingFloor) {
 
-                    this.player.imageInstance.frameIndex = 1
+                if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
 
-                } else {
+                    if (this.player.floorImageInstance.frameIndex === 0) {
 
-                    this.player.imageInstance.frameIndex = 0
+                        this.player.floorImageInstance.frameIndex = 1
+
+                    } else {
+
+                        this.player.floorImageInstance.frameIndex = 0
+
+                    }
 
                 }
 
             }
+
 
             // We draw all
             this.drawAll()
 
             // We update the frames count
             this.time.framesCount++
+
+            if (this.time.framesCount === 5000) {
+
+                this.time.framesCount = 0
+
+            }
 
         }, 1000 / this.time.FPS)
 
@@ -290,17 +298,35 @@ const Game = {
 
     drawPlayer() {
 
-        this.ctx.drawImage(
-            this.player.imageInstance,
-            this.player.imageInstance.frameIndex * Math.floor(this.player.imageInstance.width / this.player.imageInstance.frames),
-            0,
-            Math.floor(this.player.imageInstance.width / this.player.imageInstance.frames),
-            this.player.imageInstance.height,
-            this.player.position.x,
-            this.player.position.y,
-            this.player.size.width / this.player.imageInstance.frames,
-            this.player.size.height
-        )
+        // If is touching floor
+        if (this.player.isTouchingFloor) {
+
+            this.ctx.drawImage(
+                this.player.floorImageInstance,
+                this.player.floorImageInstance.frameIndex * Math.floor(this.player.floorImageInstance.width / this.player.floorImageInstance.frames),
+                0,
+                Math.floor(this.player.floorImageInstance.width / this.player.floorImageInstance.frames),
+                this.player.floorImageInstance.height,
+                this.player.position.x,
+                this.player.position.y,
+                (this.player.size.width * 2) / this.player.floorImageInstance.frames,
+                this.player.size.height
+            )
+
+        } else {    // If is not touching floor
+
+            this.ctx.drawImage(
+                this.player.shootingImageInstance,
+                this.player.position.x,
+                this.player.position.y,
+                this.player.size.width,
+                this.player.size.height
+            )
+
+        }
+
+        // If is touching floor
+
 
     },
 
@@ -345,7 +371,7 @@ const Game = {
 
         //this.background.left.imageInstance.addEventListener('load', this.drawInit())
 
-        this.player.imageInstance.onload = () => {
+        this.player.floorImageInstance.onload = () => {
 
             setTimeout(() => {
 

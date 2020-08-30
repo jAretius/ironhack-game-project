@@ -16,7 +16,7 @@ class JoyRoide {
         }
 
         this.size = {
-            width: 110,
+            width: 55,
             height: 60
         }
 
@@ -35,9 +35,13 @@ class JoyRoide {
         this.FPS = FPS
 
         // Image
-        this.imageInstance = undefined
+        this.floorImageInstance = undefined
 
-        this.imagePath = './images/player-walking.png'
+        this.floorImagePath = './images/player-walking.png'
+
+        this.shootingImageInstance = undefined
+
+        this.shootingImagePath = './images/player-flying.png'
 
         this.runSpriteTime = .1
 
@@ -47,18 +51,23 @@ class JoyRoide {
 
     init() {
 
-        this.imageInstance = new Image()
-        this.imageInstance.src = this.imagePath
+        this.floorImageInstance = new Image()
+        this.floorImageInstance.src = this.floorImagePath
 
-        this.imageInstance.frames = 2
-        this.imageInstance.frameIndex = 0
+        this.floorImageInstance.frames = 2
+        this.floorImageInstance.frameIndex = 0
+
+        this.shootingImageInstance = new Image()
+        this.shootingImageInstance.src = this.shootingImagePath
 
     }
 
     move() {
 
+        // If is shooting
         if (this.isShooting) {
 
+            // Is it already touching the roof?
             if (this.isTouchingRoof) {
 
                 this.position.y = this.position.maxPosY
@@ -70,8 +79,9 @@ class JoyRoide {
             }
 
 
-        } else {
+        } else {    // If is not shooting
 
+            // Is it already touching the floor?
             if (this.isTouchingFloor) {
 
                 this.position.y = this.position.initialPosY
