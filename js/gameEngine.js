@@ -31,7 +31,7 @@ const Game = {
     },
 
     // Physics
-    gravityForce: -2,
+    gravityForce: -0.35,
 
     // Controls
     keys: {
@@ -43,8 +43,6 @@ const Game = {
 
     // Game elements
     player: undefined,
-    bullets: [],
-    bulletShells: [],
 
     walkers: [],
     rockets: [],
@@ -89,11 +87,11 @@ const Game = {
         this.ctx = this.canvas.obejectInDOM.getContext('2d')
 
         // We create the player
-        this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.baseLine, this.canvas.highLine, this.gravityForce)
+        this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.highLine, this.gravityForce)
 
         // We create background instances
-        this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS, this.player.speed)
-        this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS, this.player.speed)
+        this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS, this.player.speedX)
+        this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS, this.player.speedX)
 
         // We set the event listeners
         this.setEventHandlers()
@@ -131,11 +129,20 @@ const Game = {
 
         setInterval(() => {
 
+            if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
+
+
+                this.player.shoot()
+
+            }
+
+
+            this.moveAll()
+
             // Check collisions
             this.checkAllCollisions()
 
             // Move game elements
-            this.moveAll()
             this.clearAll()
 
             // We change the sprite
@@ -144,13 +151,13 @@ const Game = {
 
                 if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
 
-                    if (this.player.floorImageInstance.frameIndex === 0) {
+                    if (this.player.image.floor.frameIndex === 0) {
 
-                        this.player.floorImageInstance.frameIndex = 1
+                        this.player.image.floor.frameIndex = 1
 
                     } else {
 
-                        this.player.floorImageInstance.frameIndex = 0
+                        this.player.image.floor.frameIndex = 0
 
                     }
 
@@ -164,6 +171,12 @@ const Game = {
 
             // We update the frames count
             this.time.framesCount++
+
+            if (this.player.isShooting) {
+
+                this.player.fireTime++
+
+            }
 
             if (this.time.framesCount === 5000) {
 
@@ -193,6 +206,12 @@ const Game = {
 
         this.playerCollision()
 
+        if (this.player.bullets.length) {
+
+            this.bulletsCollision()
+
+        }
+
     },
 
     playerCollision() {
@@ -201,6 +220,8 @@ const Game = {
         if (this.player.position.y >= this.canvas.baseLine) {
 
             this.player.isTouchingFloor = true
+            this.player.position.y = this.canvas.baseLine
+            this.player.speedY = 0
 
         } else {
 
@@ -210,6 +231,8 @@ const Game = {
             if (this.player.position.y <= this.canvas.highLine) {
 
                 this.player.isTouchingRoof = true
+                this.player.position.y = this.canvas.highLine
+                this.player.speedY = 0
 
             } else {
 
@@ -223,6 +246,18 @@ const Game = {
 
     bulletsCollision() {
 
+        this.player.bullets.forEach(elm => {
+
+            if (elm.position.y >= this.canvas.baseLine) {
+
+                const index = this.player.bullets.indexOf(elm)
+
+                this.player.bullets.splice(index, 1)
+
+            }
+
+        })
+
     },
 
 
@@ -233,6 +268,13 @@ const Game = {
         this.moveBackground()
 
         this.movePlayer()
+
+        // We move the bullets
+        if (this.player.bullets.length) {
+
+            this.moveBullets()
+
+        }
 
     },
 
@@ -261,6 +303,16 @@ const Game = {
 
     },
 
+    moveBullets() {
+
+        this.player.bullets.forEach((elm) => {
+
+            elm.move()
+
+        })
+
+    },
+
 
     //----- RENDERING IMAGE-----
 
@@ -274,6 +326,7 @@ const Game = {
 
         this.drawBackgrond()
         this.drawPlayer()
+        this.drawBullets()
 
     },
 
@@ -302,32 +355,59 @@ const Game = {
         if (this.player.isTouchingFloor) {
 
             this.ctx.drawImage(
-                this.player.floorImageInstance,
-                this.player.floorImageInstance.frameIndex * Math.floor(this.player.floorImageInstance.width / this.player.floorImageInstance.frames),
+                this.player.image.floor.imageInstance,
+                this.player.image.floor.frameIndex * Math.floor(this.player.image.floor.imageInstance.width / this.player.image.floor.frames),
                 0,
-                Math.floor(this.player.floorImageInstance.width / this.player.floorImageInstance.frames),
-                this.player.floorImageInstance.height,
+                Math.floor(this.player.image.floor.imageInstance.width / this.player.image.floor.frames),
+                this.player.image.floor.imageInstance.height,
                 this.player.position.x,
                 this.player.position.y,
-                (this.player.size.width * 2) / this.player.floorImageInstance.frames,
+                (this.player.size.width * 2) / this.player.image.floor.frames,
                 this.player.size.height
             )
 
         } else {    // If is not touching floor
 
-            this.ctx.drawImage(
-                this.player.shootingImageInstance,
-                this.player.position.x,
-                this.player.position.y,
-                this.player.size.width,
-                this.player.size.height
-            )
+            // If is shooting
+            if (this.player.isShooting) {
+
+                this.ctx.drawImage(
+                    this.player.image.flyingShooting.imageInstance,
+                    this.player.position.x,
+                    this.player.position.y,
+                    this.player.size.width,
+                    this.player.size.height + 26
+                )
+
+            } else {    // If is not shooting
+
+                this.ctx.drawImage(
+                    this.player.image.flying.imageInstance,
+                    this.player.position.x,
+                    this.player.position.y,
+                    this.player.size.width,
+                    this.player.size.height
+                )
+
+            }
 
         }
 
         // If is touching floor
 
 
+    },
+
+    drawBullets() {
+
+        if (this.player.bullets.length) {
+
+            this.player.bullets.forEach(elm => {
+
+                this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.size.width, elm.size.height)
+
+            })
+        }
     },
 
 
@@ -347,6 +427,7 @@ const Game = {
             if (e.keyCode === this.keys.SPACE) {
 
                 this.player.isShooting = true
+                this.player.forces.totalForce = this.player.forces.shootingForce - this.player.forces.gravityForce
 
             }
 
@@ -357,8 +438,11 @@ const Game = {
             if (e.keyCode === this.keys.SPACE) {
 
                 this.player.isShooting = false
+                this.player.forces.totalForce = this.player.forces.gravityForce
 
             }
+
+            this.player.fireTime = 0
 
         }
 
@@ -369,9 +453,7 @@ const Game = {
 
         }
 
-        //this.background.left.imageInstance.addEventListener('load', this.drawInit())
-
-        this.player.floorImageInstance.onload = () => {
+        this.player.image.floor.imageInstance.onload = () => {
 
             setTimeout(() => {
 

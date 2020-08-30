@@ -1,6 +1,6 @@
 class JoyRoide {
 
-    constructor(canvas, ctx, FPS, baseLine, highLine, gravityForce) {
+    constructor(canvas, ctx, FPS, highLine, gravityForce) {
 
         // Canvas
         this.canvas = canvas
@@ -10,24 +10,34 @@ class JoyRoide {
         // Measurement
         this.position = {
             x: canvas.size.width / 5,
-            y: baseLine,
-            initialPosY: baseLine,
+            y: this.canvas.baseLine,
+            initialPosY: this.canvas.baseLine,
             maxPosY: highLine
         }
 
         this.size = {
-            width: 55,
-            height: 60
+            width: 48,
+            height: 54
         }
 
         this.isTouchingFloor = true
         this.isTouchingRoof = false
 
-        // Forces
-        this.speed = 7
+        // Physics
+        this.speedX = 7
+        this.speedY = 0
+
+        this.forces = {
+
+            gravityForce: gravityForce,
+            shootingForce: .0001,
+            totalForce: this.gravityForce
+
+        }
 
         this.gravityForce = gravityForce
-        this.shootingForce = 3
+        this.shootingForce = 0.55
+        this.totalForce = this.gravityForce
 
         this.isShooting = false
 
@@ -35,15 +45,33 @@ class JoyRoide {
         this.FPS = FPS
 
         // Image
-        this.floorImageInstance = undefined
+        this.image = {
 
-        this.floorImagePath = './images/player-walking.png'
+            floor: {
+                imageInstance: undefined,
+                imagePath: './images/player-walking.png',
+                frames: 2,
+                frameIndex: 0
+            },
 
-        this.shootingImageInstance = undefined
+            flying: {
+                imageInstance: undefined,
+                imagePath: './images/player-flying.png'
+            },
 
-        this.shootingImagePath = './images/player-flying.png'
+            flyingShooting: {
+                imageInstance: undefined,
+                imagePath: './images/player-flying-shooting.png'
+            }
+
+        }
 
         this.runSpriteTime = .1
+
+        this.bullets = []
+        this.bulletShells = []
+        this.fireFrequency = 5
+        this.fireTime = 0
 
         this.init()
 
@@ -51,18 +79,22 @@ class JoyRoide {
 
     init() {
 
-        this.floorImageInstance = new Image()
-        this.floorImageInstance.src = this.floorImagePath
+        // We instantiate floor image
+        this.image.floor.imageInstance = new Image()
+        this.image.floor.imageInstance.src = this.image.floor.imagePath
 
-        this.floorImageInstance.frames = 2
-        this.floorImageInstance.frameIndex = 0
+        // We instantiate flying image
+        this.image.flying.imageInstance = new Image()
+        this.image.flying.imageInstance.src = this.image.flying.imagePath
 
-        this.shootingImageInstance = new Image()
-        this.shootingImageInstance.src = this.shootingImagePath
+        // We instantiate flying shooting
+        this.image.flyingShooting.imageInstance = new Image()
+        this.image.flyingShooting.imageInstance.src = this.image.flyingShooting.imagePath
 
     }
 
     move() {
+
 
         // If is shooting
         if (this.isShooting) {
@@ -74,7 +106,11 @@ class JoyRoide {
 
             } else {
 
-                this.position.y -= this.shootingForce
+                //this.position.y -= this.forces.shootingForce
+
+                // We update the velocity
+                this.speedY = this.speedY + (this.forces.totalForce)
+                this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
 
             }
 
@@ -88,12 +124,19 @@ class JoyRoide {
 
             } else {
 
-                this.position.y -= this.gravityForce
+                this.speedY = this.speedY + (this.forces.totalForce)
+                this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
 
             }
 
-
         }
+
+    }
+
+    shoot() {
+
+        const newBullet = new Bullet(this.canvas, this.ctx, this.FPS, this.position)
+        this.bullets.push(newBullet)
 
     }
 
