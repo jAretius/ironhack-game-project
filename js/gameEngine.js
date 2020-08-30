@@ -14,7 +14,8 @@ const Game = {
             width: 900,
             height: 500
         },
-        baseLine: -120,
+        baseLine: - 120,
+        highLine: 66,
 
         obejectInDOM: undefined
 
@@ -28,6 +29,9 @@ const Game = {
         framesCount: 0
 
     },
+
+    // Physics
+    gravityForce: -0.8,
 
     // Controls
     keys: {
@@ -85,7 +89,7 @@ const Game = {
         this.ctx = this.canvas.obejectInDOM.getContext('2d')
 
         // We create the player
-        this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.baseLine)
+        this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.baseLine, this.canvas.highLine, this.gravityForce)
 
         // We create background instances
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS, this.player.speed)
@@ -103,6 +107,11 @@ const Game = {
         this.canvas.obejectInDOM = document.querySelector('#my-canvas')
         this.canvas.obejectInDOM.width = this.canvas.size.width
         this.canvas.obejectInDOM.height = this.canvas.size.height
+
+        this.canvas.baseLine = this.canvas.size.height + this.canvas.baseLine
+
+        console.log(this.canvas.baseLine)
+
 
     },
 
@@ -126,9 +135,33 @@ const Game = {
 
         setInterval(() => {
 
+            // Check collisions
+            this.checkAllCollisions()
+
+            // Move game elements
             this.moveAll()
             this.clearAll()
+
+            // We change the sprite
+            if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
+
+                if (this.player.imageInstance.frameIndex === 0) {
+
+                    this.player.imageInstance.frameIndex = 1
+
+                } else {
+
+                    this.player.imageInstance.frameIndex = 0
+
+                }
+
+            }
+
+            // We draw all
             this.drawAll()
+
+            // We update the frames count
+            this.time.framesCount++
 
         }, 1000 / this.time.FPS)
 
@@ -146,11 +179,52 @@ const Game = {
     },
 
 
+    //----- CHECKERS -----
+
+    checkAllCollisions() {
+
+        this.playerCollision()
+
+    },
+
+    playerCollision() {
+
+        // Floor collision
+        if (this.player.position.y >= this.canvas.baseLine) {
+
+            this.player.isTouchingFloor = true
+
+        } else {
+
+            this.player.isTouchingFloor = false
+
+            // Roof collision
+            if (this.player.position.y <= this.canvas.highLine) {
+
+                this.player.isTouchingRoof = true
+
+            } else {
+
+                this.player.isTouchingRoof = false
+
+            }
+
+        }
+
+    },
+
+    bulletsCollision() {
+
+    },
+
+
     //----- MOTION METHODS -----    
 
     moveAll() {
 
         this.moveBackground()
+
+        this.movePlayer()
 
     },
 
@@ -175,20 +249,7 @@ const Game = {
 
     movePlayer() {
 
-    },
-
-
-    //----- CHECKERS -----
-
-    checkCollisions() {
-
-    },
-
-    playerCollision() {
-
-    },
-
-    bulletsCollision() {
+        this.player.move()
 
     },
 
