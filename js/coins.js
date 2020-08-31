@@ -1,5 +1,5 @@
 class Coin {
-    constructor(canvas, ctx, FPS, positionX, positionY) {
+    constructor(canvas, ctx, FPS, positionX, positionY, index) {
 
         this.canvas = canvas
         this.ctx = ctx
@@ -14,7 +14,7 @@ class Coin {
             height: 25
         }
 
-        this.speed = 1
+        this.speed = 7
 
         this.FPS = FPS
 
@@ -23,7 +23,7 @@ class Coin {
             imageInstance: undefined,
             imageSource: './images/Coins.png',
             frames: 8,
-            frameIndex: 0
+            frameIndex: index
         }
 
         this.flipCoinTime = .1
@@ -40,9 +40,11 @@ class Coin {
 
     }
 
-    move() {
+    move(playerSpeed) {
 
-        this.position.x -= this.speed
+        const compensatedSpeed = ((60 / this.FPS) * playerSpeed)
+
+        this.position.x -= compensatedSpeed
 
     }
 

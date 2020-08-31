@@ -1,6 +1,6 @@
 class Background {
 
-    constructor(canvas, ctx, initialPosX, FPS, playerSpeed) {
+    constructor(canvas, ctx, initialPosX, FPS) {
 
         this.ctx = ctx
 
@@ -13,8 +13,6 @@ class Background {
             width: canvas.size.width,
             height: canvas.size.height
         }
-
-        this.playerSpeed = playerSpeed
 
         this.FPS = FPS
 
@@ -34,9 +32,9 @@ class Background {
 
     }
 
-    move() {
+    move(playerSpeed) {
 
-        const compesatedSpeed = ((60 / this.FPS) * this.playerSpeed)
+        const compesatedSpeed = ((60 / this.FPS) * playerSpeed)
 
         this.position.x -= compesatedSpeed
     }

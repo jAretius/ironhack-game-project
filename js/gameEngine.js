@@ -26,7 +26,8 @@ const Game = {
     time: {
 
         FPS: 60,
-        framesCount: 0
+        framesCount: 0,
+        isFirstFrame: true
 
     },
 
@@ -71,7 +72,9 @@ const Game = {
 
     coinsRowAmount: 10,
 
-    coinsCreationTime: 10,  // Seconds
+    coinsCreationTime: 3,  // Seconds
+
+    collectedCoins: 0,
 
 
     //----- INITIALIZE METHODS -----    
@@ -86,8 +89,8 @@ const Game = {
         this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.highLine, this.gravityForce)
 
         // We create background instances
-        this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS, this.player.speedX)
-        this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS, this.player.speedX)
+        this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS)
+        this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS)
 
         // We set the event listeners
         this.setEventHandlers()
@@ -126,7 +129,7 @@ const Game = {
         setInterval(() => {
 
             // We create coins every 10 secs
-            if (this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
+            if (!this.time.isFirstFrame && this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
 
                 this.createCoins()
 
@@ -145,63 +148,10 @@ const Game = {
             // Check collisions
             this.checkAllCollisions()
 
+            this.checkSpritesChange()
+
             // Move game elements
             this.clearAll()
-
-            // We change the sprite
-            if (this.player.isTouchingFloor) {
-
-                if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
-
-                    if (this.player.image.floor.frameIndex === 0) {
-
-                        this.player.image.floor.frameIndex = 1
-
-                    } else {
-
-                        this.player.image.floor.frameIndex = 0
-
-                    }
-
-                }
-
-            }
-
-            // we change the sprite Coins
-
-            // if (this.time.framesCount % (this.this.FPS * this.coins.flipCoinsTime) === 0) {
-
-            //     switch (this.coins.image.frameIndex) {
-            //         case 0:
-            //             this.this.coins.image.frameIndex = 1
-            //             break;
-            //         case 1:
-            //             this.this.coins.image.frameIndex = 2
-            //             break;
-            //         case 2:
-            //             this.this.coins.image.frameIndex = 3
-            //             break;
-            //         case 3:
-            //             this.this.coins.image.frameIndex = 4
-            //             break;
-            //         case 4:
-            //             this.this.coins.image.frameIndex = 5
-            //             break;
-            //         case 5:
-            //             this.this.coins.image.frameIndex = 6
-            //             break;
-            //         case 6:
-            //             this.this.coins.image.frameIndex = 7
-            //             break;
-            //         case 7:
-            //             this.this.coins.image.frameIndex = 8
-            //             break;
-
-            //         default:
-            //             break;
-            //     }
-            // }
-
 
             // We draw all
             this.drawAll()
@@ -225,6 +175,8 @@ const Game = {
 
             }
 
+            this.time.isFirstFrame = false
+
         }, 1000 / this.time.FPS)
 
     },
@@ -244,7 +196,7 @@ const Game = {
 
         for (let i = 0; i < this.coinsRowAmount; i++) {
 
-            const newCoin = new Coin(this.canvas, this.ctx, this.time.FPS, this.canvas.size.width + 25 * i, this.canvas.size.height / 2)
+            const newCoin = new Coin(this.canvas, this.ctx, this.time.FPS, this.canvas.size.width + 25 * i, (this.canvas.size.height / 2 + (i * 4)) - 50, i)
 
             this.coins.push(newCoin)
 
@@ -264,6 +216,8 @@ const Game = {
             this.bulletsCollision()
 
         }
+
+        this.checkCoinsOut()
 
     },
 
@@ -295,6 +249,42 @@ const Game = {
 
         }
 
+        // Coins collision
+        const playerPosX = this.player.position.x
+        const playerPosY = this.player.position.y
+        const playerWidth = this.player.size.width
+        const playerHeight = this.player.size.height
+
+        this.coins.forEach((elm => {
+
+            var rect1 = { x: 5, y: 5, width: 50, height: 50 }
+            var rect2 = { x: 20, y: 10, width: 10, height: 10 }
+
+            const coinPosX = elm.position.x
+            const coinPosY = elm.position.y
+            const coinWidth = elm.size.width
+            const coinHeight = elm.size.height
+
+
+            // We check if is invading the coin area
+            if (playerPosX < coinPosX + coinWidth &&
+                playerPosX + playerWidth > coinPosX &&
+                playerPosY < coinPosY + coinHeight &&
+                playerPosY + playerHeight > coinPosY) {
+
+
+                // We delete the coin
+                this.coins.splice(this.coins.indexOf(elm), 1)
+
+                // We add a point
+                this.collectedCoins++
+                console.log(this.collectedCoins)
+            }
+
+        }))
+
+
+
     },
 
     bulletsCollision() {
@@ -311,6 +301,94 @@ const Game = {
             }
 
         })
+
+    },
+
+    checkCoinsOut() {
+
+        if (this.coins.length) {
+
+            this.coins.forEach(elm => {
+
+                if (elm.position.x + elm.size.width <= 0) {
+
+                    const index = this.coins.indexOf(elm)
+
+                    this.coins.splice(index, 1)
+
+                }
+
+            })
+
+        }
+
+    },
+
+    checkSpritesChange() {
+
+        // We change the running sprite
+        if (this.player.isTouchingFloor) {
+
+            if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
+
+                if (this.player.image.floor.frameIndex === 0) {
+
+                    this.player.image.floor.frameIndex = 1
+
+                } else {
+
+                    this.player.image.floor.frameIndex = 0
+
+                }
+
+            }
+
+        }
+
+        // we change the sprite Coins
+        if (this.coins.length) {
+
+            if (this.time.framesCount % (this.time.FPS * this.coins[0].flipCoinTime) === 0) {
+
+                this.coins.forEach(elm => {
+
+                    const index = this.coins.indexOf(elm)
+
+                    switch (this.coins[index].image.frameIndex) {
+                        case 0:
+                            this.coins[index].image.frameIndex = 1
+                            break;
+                        case 1:
+                            this.coins[index].image.frameIndex = 2
+                            break;
+                        case 2:
+                            this.coins[index].image.frameIndex = 3
+                            break;
+                        case 3:
+                            this.coins[index].image.frameIndex = 4
+                            break;
+                        case 4:
+                            this.coins[index].image.frameIndex = 5
+                            break;
+                        case 5:
+                            this.coins[index].image.frameIndex = 6
+                            break;
+                        case 6:
+                            this.coins[index].image.frameIndex = 7
+                            break;
+                        case 7:
+                            this.coins[index].image.frameIndex = 0
+                            break;
+
+                        default:
+                            break;
+                    }
+
+
+
+                })
+            }
+        }
 
     },
 
@@ -345,8 +423,8 @@ const Game = {
 
         }
 
-        this.background.left.move()
-        this.background.right.move()
+        this.background.left.move(this.player.speedX)
+        this.background.right.move(this.player.speedX)
 
     },
 
@@ -356,7 +434,7 @@ const Game = {
 
     movePlayer() {
 
-        this.player.move()
+        this.player.move(this.player.speedX)
 
     },
 
@@ -374,7 +452,7 @@ const Game = {
 
         this.coins.forEach(elm => {
 
-            elm.move()
+            elm.move(this.player.speedX)
 
         })
 
