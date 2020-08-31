@@ -1,4 +1,45 @@
-class Rocket { }
+class Rocket {
+    constructor(canvas, ctx, warningPosY, gamecontext) {
+
+        this.canvas = canvas
+        this.ctx = ctx
+        this.gameContext = gamecontext
+
+        this.position = {
+            x: canvas.size.width,
+            y: warningPosY
+        }
+
+        this.size = {
+            width: 80,
+            height: 40
+        }
+
+        this.image = {
+            imageInstance: undefined,
+            imageSource: './images/rocket.png',
+        }
+
+        this.speed = 15
+
+        this.init()
+
+    }
+    init() {
+
+        this.image.imageInstance = new Image()
+        this.image.imageInstance.src = this.image.imageSource
+
+    }
+    move() {
+
+        this.position.x -= this.speed
+    }
+
+
+
+
+}
 
 class Warning {
 

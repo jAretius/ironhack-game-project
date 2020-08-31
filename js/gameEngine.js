@@ -133,6 +133,9 @@ const Game = {
 
         setInterval(() => {
 
+            console.log(this.rockets)
+
+
             // We create coins every X secs
             if (!this.time.isFirstFrame && this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
 
@@ -235,6 +238,8 @@ const Game = {
 
         // We shoot the rocket
 
+        this.rockets.push(new Rocket(this.canvas, this.ctx, warningElement.position.y, this))
+
     },
 
 
@@ -251,6 +256,7 @@ const Game = {
         }
 
         this.checkCoinsOut()
+        this.checkRocketsOut()
 
     },
 
@@ -355,6 +361,24 @@ const Game = {
 
     },
 
+    checkRocketsOut() {
+
+        if (this.rockets.length) {
+
+            this.rockets.forEach(elm => {
+
+
+
+                if (elm.position.x + elm.size.width <= 0) {
+
+                    const index = this.rockets.indexOf(elm)
+
+                    this.rockets.splice(index, 1)
+                }
+            })
+        }
+    },
+
     checkSpritesChange() {
 
         // We change the running sprite
@@ -420,11 +444,7 @@ const Game = {
         this.moveCoins()
 
         // Move warnings
-        if (this.rocketWarnings.length) {
-
-            this.moveRockets()
-
-        }
+        this.moveRockets()
 
     },
 
@@ -475,7 +495,20 @@ const Game = {
 
     moveRockets() {
 
-        this.rocketWarnings[0].move(this.player.position.y)
+        // We move the warnings
+        this.rocketWarnings.forEach(elm => {
+
+            elm.move(this.player.position.y)
+
+        })
+
+        // We move the rockets
+
+        this.rockets.forEach(elm => {
+
+            elm.move()
+
+        })
 
     },
 
@@ -636,6 +669,7 @@ const Game = {
 
     drawRockets() {
 
+        // We draw the warnings
         this.rocketWarnings.forEach(elm => {
 
             this.ctx.drawImage(
@@ -650,6 +684,18 @@ const Game = {
                 elm.size.height
             )
 
+        })
+
+        // We draw the rockets
+        this.rockets.forEach(elm => {
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height
+            )
         })
 
     },
