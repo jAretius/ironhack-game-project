@@ -31,7 +31,7 @@ const Game = {
     },
 
     // Physics
-    gravityForce: -0.35,
+    gravityForce: 0.2,
 
     // Controls
     keys: {
@@ -67,15 +67,11 @@ const Game = {
 
     },
 
-    coins: {
+    coins: [],
 
-        position: {
-            x: 0,
-            y: 0
-        },
-        value: 0
+    coinsRowAmount: 10,
 
-    },
+    coinsCreationTime: 10,  // Seconds
 
 
     //----- INITIALIZE METHODS -----    
@@ -129,13 +125,20 @@ const Game = {
 
         setInterval(() => {
 
-            if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
+            // We create coins every 10 secs
+            if (this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
 
+                this.createCoins()
+
+            }
+
+
+            // Player shooting
+            if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
 
                 this.player.shoot()
 
             }
-
 
             this.moveAll()
 
@@ -146,7 +149,6 @@ const Game = {
             this.clearAll()
 
             // We change the sprite
-
             if (this.player.isTouchingFloor) {
 
                 if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
@@ -165,20 +167,59 @@ const Game = {
 
             }
 
+            // we change the sprite Coins
+
+            // if (this.time.framesCount % (this.this.FPS * this.coins.flipCoinsTime) === 0) {
+
+            //     switch (this.coins.image.frameIndex) {
+            //         case 0:
+            //             this.this.coins.image.frameIndex = 1
+            //             break;
+            //         case 1:
+            //             this.this.coins.image.frameIndex = 2
+            //             break;
+            //         case 2:
+            //             this.this.coins.image.frameIndex = 3
+            //             break;
+            //         case 3:
+            //             this.this.coins.image.frameIndex = 4
+            //             break;
+            //         case 4:
+            //             this.this.coins.image.frameIndex = 5
+            //             break;
+            //         case 5:
+            //             this.this.coins.image.frameIndex = 6
+            //             break;
+            //         case 6:
+            //             this.this.coins.image.frameIndex = 7
+            //             break;
+            //         case 7:
+            //             this.this.coins.image.frameIndex = 8
+            //             break;
+
+            //         default:
+            //             break;
+            //     }
+            // }
+
 
             // We draw all
             this.drawAll()
 
-            // We update the frames count
+            // We update the counters
+
+            // Frames counter
             this.time.framesCount++
 
+            // Shooting time counter
             if (this.player.isShooting) {
 
                 this.player.fireTime++
 
             }
 
-            if (this.time.framesCount === 5000) {
+            // Frames count reseter
+            if (this.time.framesCount === 6000) {
 
                 this.time.framesCount = 0
 
@@ -196,6 +237,18 @@ const Game = {
     },
 
     deleteOutsiders() {
+
+    },
+
+    createCoins() {
+
+        for (let i = 0; i < this.coinsRowAmount; i++) {
+
+            const newCoin = new Coin(this.canvas, this.ctx, this.time.FPS, this.canvas.size.width + 25 * i, this.canvas.size.height / 2)
+
+            this.coins.push(newCoin)
+
+        }
 
     },
 
@@ -248,11 +301,12 @@ const Game = {
 
         this.player.bullets.forEach(elm => {
 
+            // If it touches the floor
             if (elm.position.y >= this.canvas.baseLine) {
 
                 const index = this.player.bullets.indexOf(elm)
 
-                this.player.bullets.splice(index, 1)
+                elm.explode()
 
             }
 
@@ -275,6 +329,9 @@ const Game = {
             this.moveBullets()
 
         }
+
+        // We move the coins
+        this.moveCoins()
 
     },
 
@@ -313,6 +370,16 @@ const Game = {
 
     },
 
+    moveCoins() {
+
+        this.coins.forEach(elm => {
+
+            elm.move()
+
+        })
+
+    },
+
 
     //----- RENDERING IMAGE-----
 
@@ -327,6 +394,7 @@ const Game = {
         this.drawBackgrond()
         this.drawPlayer()
         this.drawBullets()
+        this.drawCoins()
 
     },
 
@@ -400,14 +468,48 @@ const Game = {
 
     drawBullets() {
 
+        // If there is some bullet in the array
         if (this.player.bullets.length) {
 
             this.player.bullets.forEach(elm => {
 
-                this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.size.width, elm.size.height)
+                if (!elm.isExploding) {
+
+                    this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.image.shoot.size.width, elm.image.shoot.size.height)
+
+                } else {
+
+                    this.ctx.drawImage(elm.image.explosion.imageInstance, elm.position.x - 25, elm.position.y + 10, elm.image.explosion.size.width, elm.image.explosion.size.height)
+
+                    const index = this.player.bullets.indexOf(elm)
+
+                    this.player.bullets.splice(index, 1)
+
+                }
+
 
             })
         }
+    },
+
+    drawCoins() {
+
+        this.coins.forEach(elm => {
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.image.frameIndex * Math.floor(elm.image.imageInstance.width / elm.image.frames),
+                0,
+                Math.floor(elm.image.imageInstance.width / elm.image.frames),
+                elm.image.imageInstance.height,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height)
+
+        })
+
+
     },
 
 
@@ -427,7 +529,7 @@ const Game = {
             if (e.keyCode === this.keys.SPACE) {
 
                 this.player.isShooting = true
-                this.player.forces.totalForce = this.player.forces.shootingForce - this.player.forces.gravityForce
+                this.player.forces.totalForce = this.player.forces.shootingForce - this.gravityForce
 
             }
 
@@ -438,7 +540,7 @@ const Game = {
             if (e.keyCode === this.keys.SPACE) {
 
                 this.player.isShooting = false
-                this.player.forces.totalForce = this.player.forces.gravityForce
+                this.player.forces.totalForce = 0 - this.player.forces.gravityForce
 
             }
 

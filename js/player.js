@@ -30,14 +30,10 @@ class JoyRoide {
         this.forces = {
 
             gravityForce: gravityForce,
-            shootingForce: .0001,
+            shootingForce: 0.6,
             totalForce: this.gravityForce
 
         }
-
-        this.gravityForce = gravityForce
-        this.shootingForce = 0.55
-        this.totalForce = this.gravityForce
 
         this.isShooting = false
 
@@ -69,6 +65,7 @@ class JoyRoide {
         this.runSpriteTime = .1
 
         this.bullets = []
+        this.explodedBullets = []
         this.bulletShells = []
         this.fireFrequency = 5
         this.fireTime = 0
@@ -109,7 +106,7 @@ class JoyRoide {
                 //this.position.y -= this.forces.shootingForce
 
                 // We update the velocity
-                this.speedY = this.speedY + (this.forces.totalForce)
+                this.speedY = this.speedY + (0.5)
                 this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
 
             }
@@ -124,7 +121,7 @@ class JoyRoide {
 
             } else {
 
-                this.speedY = this.speedY + (this.forces.totalForce)
+                this.speedY = this.speedY + (-0.3)
                 this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
 
             }
