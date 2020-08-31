@@ -46,6 +46,7 @@ const Game = {
     player: undefined,
 
     walkers: [],
+    rocketWarnings: [],
     rockets: [],
     obstacles: [],
     lasers: [],
@@ -127,6 +128,8 @@ const Game = {
     //----- GAME ENGINE -----
 
     createFrame() {
+
+        this.createWarning()
 
         setInterval(() => {
 
@@ -214,6 +217,23 @@ const Game = {
             this.player.bullets.splice(index, 1)
 
         }, 100)
+
+    },
+
+    createWarning() {
+
+        this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
+
+    },
+
+    createRocket(warningElement) {
+
+        const index = this.rocketWarnings.indexOf(warningElement)
+
+        // We delete the warning from the array
+        this.rocketWarnings.splice(index, 1)
+
+        // We shoot the rocket
 
     },
 
@@ -399,6 +419,13 @@ const Game = {
         // We move the coins
         this.moveCoins()
 
+        // Move warnings
+        if (this.rocketWarnings.length) {
+
+            this.moveRockets()
+
+        }
+
     },
 
     moveBackground() {
@@ -446,6 +473,12 @@ const Game = {
 
     },
 
+    moveRockets() {
+
+        this.rocketWarnings[0].move(this.player.position.y)
+
+    },
+
 
     //----- RENDERING IMAGE-----
 
@@ -462,6 +495,7 @@ const Game = {
         this.drawBullets()
         this.drawCoins()
         this.drawScore()
+        this.drawRockets()
 
     },
 
@@ -600,6 +634,26 @@ const Game = {
 
     },
 
+    drawRockets() {
+
+        this.rocketWarnings.forEach(elm => {
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.image.frameIndex * Math.floor(elm.image.imageInstance.width / elm.image.frames),
+                0,
+                Math.floor(elm.image.imageInstance.width / elm.image.frames),
+                elm.image.imageInstance.height,
+                elm.position.x,
+                elm.position.y,
+                (elm.size.width * 2) / elm.image.frames,
+                elm.size.height
+            )
+
+        })
+
+    },
+
 
     //----- GAME OVER -----
 
@@ -618,7 +672,6 @@ const Game = {
     addDistance() {
 
         this.distanceDone = this.distanceDone + (this.player.speedX / 30)
-        console.log(this.distanceDone)
 
     },
 
