@@ -20,7 +20,7 @@ class Rocket {
             imageSource: './images/rocket.png',
         }
 
-        this.speed = 15
+        this.speed = 20
 
         this.init()
 

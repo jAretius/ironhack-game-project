@@ -46,8 +46,16 @@ const Game = {
     player: undefined,
 
     walkers: [],
+
     rocketWarnings: [],
     rockets: [],
+    rocketsRandomTime: {
+        minTime: 5,
+        maxTime: 15,
+        minInicial: 5,
+        maxInicial: 15
+    },
+
     obstacles: [],
     lasers: [],
 
@@ -122,6 +130,8 @@ const Game = {
 
         this.createFrame()
 
+        this.createWarning()
+
     },
 
 
@@ -129,12 +139,8 @@ const Game = {
 
     createFrame() {
 
-        this.createWarning()
 
         setInterval(() => {
-
-            console.log(this.rockets)
-
 
             // We create coins every X secs
             if (!this.time.isFirstFrame && this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
@@ -223,9 +229,25 @@ const Game = {
 
     },
 
+    destroyRocket(rocketToKill) {
+
+        const index = this.rockets.indexOf(rocketToKill)
+
+        this.rockets.splice(index, 1)
+
+    },
+
     createWarning() {
 
-        this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
+        const randomValue = Math.floor(Math.random() * (this.rocketsRandomTime.maxTime + 1)) + this.rocketsRandomTime.minTime
+
+        setTimeout(() => {
+
+            this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
+            this.createWarning()
+
+        }, randomValue * 1000);
+
 
     },
 
@@ -262,8 +284,13 @@ const Game = {
 
     playerCollision() {
 
+        const playerPosX = this.player.position.x
+        const playerPosY = this.player.position.y
+        const playerWidth = this.player.size.width
+        const playerHeight = this.player.size.height
+
         // Floor collision
-        if (this.player.position.y >= this.canvas.baseLine) {
+        if (playerPosY >= this.canvas.baseLine) {
 
             this.player.isTouchingFloor = true
             this.player.position.y = this.canvas.baseLine
@@ -274,7 +301,7 @@ const Game = {
             this.player.isTouchingFloor = false
 
             // Roof collision
-            if (this.player.position.y <= this.canvas.highLine) {
+            if (playerPosY <= this.canvas.highLine) {
 
                 this.player.isTouchingRoof = true
                 this.player.position.y = this.canvas.highLine
@@ -289,15 +316,7 @@ const Game = {
         }
 
         // Coins collision
-        const playerPosX = this.player.position.x
-        const playerPosY = this.player.position.y
-        const playerWidth = this.player.size.width
-        const playerHeight = this.player.size.height
-
         this.coins.forEach((elm => {
-
-            var rect1 = { x: 5, y: 5, width: 50, height: 50 }
-            var rect2 = { x: 20, y: 10, width: 10, height: 10 }
 
             const coinPosX = elm.position.x
             const coinPosY = elm.position.y
@@ -320,6 +339,24 @@ const Game = {
 
         }))
 
+
+        // We Rockets Colision
+        this.rockets.forEach(elm => {
+
+            const rocketsPosX = elm.position.x
+            const rocketsPosY = elm.position.y
+            const rocketsWidth = elm.size.width
+            const rocketsHeight = elm.size.height
+
+            if (playerPosX < rocketsPosX + rocketsWidth &&
+                playerPosX + playerWidth > rocketsPosX &&
+                playerPosY < rocketsPosY + rocketsHeight &&
+                playerPosY + playerHeight > rocketsPosY) {
+
+                this.destroyRocket(elm)
+            }
+
+        })
 
 
     },
@@ -718,6 +755,21 @@ const Game = {
     addDistance() {
 
         this.distanceDone = this.distanceDone + (this.player.speedX / 30)
+
+        switch (Math.floor(this.distanceDone)) {
+            case 300:
+                this.rocketsRandomTime.minTime = .2
+                this.rocketsRandomTime.maxTime = .5
+
+                break;
+
+            case 500:
+                this.rocketsRandomTime.minTime = this.rocketsRandomTime.minInicial
+                this.rocketsRandomTime.maxTime = this.rocketsRandomTime.maxInicial
+
+            default:
+                break;
+        }
 
     },
 
