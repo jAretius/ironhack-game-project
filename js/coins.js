@@ -38,6 +38,9 @@ class Coin {
         this.image.imageInstance = new Image()
         this.image.imageInstance.src = this.image.imageSource
 
+        // Asign frameIndex value
+        this.image.frameIndex -= Math.floor(this.image.frameIndex + 1 / this.image.frames)
+
     }
 
     move(playerSpeed) {

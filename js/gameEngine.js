@@ -72,9 +72,11 @@ const Game = {
 
     coinsRowAmount: 10,
 
-    coinsCreationTime: 3,  // Seconds
+    coinsCreationTime: 1,  // Seconds
 
     collectedCoins: 0,
+
+    distanceDone: 0,
 
 
     //----- INITIALIZE METHODS -----    
@@ -128,7 +130,7 @@ const Game = {
 
         setInterval(() => {
 
-            // We create coins every 10 secs
+            // We create coins every X secs
             if (!this.time.isFirstFrame && this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
 
                 this.createCoins()
@@ -155,6 +157,9 @@ const Game = {
 
             // We draw all
             this.drawAll()
+
+            // We add distance
+            this.addDistance()
 
             // We update the counters
 
@@ -188,10 +193,6 @@ const Game = {
 
     },
 
-    deleteOutsiders() {
-
-    },
-
     createCoins() {
 
         for (let i = 0; i < this.coinsRowAmount; i++) {
@@ -201,6 +202,18 @@ const Game = {
             this.coins.push(newCoin)
 
         }
+
+    },
+
+    destroyBullet(bulletToKill) {
+
+        setTimeout(() => {
+
+            const index = this.player.bullets.indexOf(bulletToKill)
+
+            this.player.bullets.splice(index, 1)
+
+        }, 100)
 
     },
 
@@ -272,13 +285,11 @@ const Game = {
                 playerPosY < coinPosY + coinHeight &&
                 playerPosY + playerHeight > coinPosY) {
 
-
                 // We delete the coin
                 this.coins.splice(this.coins.indexOf(elm), 1)
 
                 // We add a point
-                this.collectedCoins++
-                console.log(this.collectedCoins)
+                this.addPoints()
             }
 
         }))
@@ -354,38 +365,15 @@ const Game = {
 
                     const index = this.coins.indexOf(elm)
 
-                    switch (this.coins[index].image.frameIndex) {
-                        case 0:
-                            this.coins[index].image.frameIndex = 1
-                            break;
-                        case 1:
-                            this.coins[index].image.frameIndex = 2
-                            break;
-                        case 2:
-                            this.coins[index].image.frameIndex = 3
-                            break;
-                        case 3:
-                            this.coins[index].image.frameIndex = 4
-                            break;
-                        case 4:
-                            this.coins[index].image.frameIndex = 5
-                            break;
-                        case 5:
-                            this.coins[index].image.frameIndex = 6
-                            break;
-                        case 6:
-                            this.coins[index].image.frameIndex = 7
-                            break;
-                        case 7:
-                            this.coins[index].image.frameIndex = 0
-                            break;
+                    if (elm.image.frameIndex !== elm.image.frames - 1) {
 
-                        default:
-                            break;
+                        elm.image.frameIndex += 1
+
+                    } else {
+
+                        elm.image.frameIndex = 0
+
                     }
-
-
-
                 })
             }
         }
@@ -442,7 +430,7 @@ const Game = {
 
         this.player.bullets.forEach((elm) => {
 
-            elm.move()
+            elm.move(this.player.speedX)
 
         })
 
@@ -473,6 +461,7 @@ const Game = {
         this.drawPlayer()
         this.drawBullets()
         this.drawCoins()
+        this.drawScore()
 
     },
 
@@ -561,7 +550,8 @@ const Game = {
 
                     const index = this.player.bullets.indexOf(elm)
 
-                    this.player.bullets.splice(index, 1)
+                    //this.player.bullets.splice(index, 1)
+                    this.destroyBullet(elm)
 
                 }
 
@@ -590,12 +580,48 @@ const Game = {
 
     },
 
+    drawScore() {
+
+        // We draw distance
+        const distanceToDraw = `${Math.floor(this.distanceDone)}M`
+
+        this.ctx.font = 'bold 40px Arial'
+        this.ctx.fillStyle = 'white'
+        this.ctx.fillText(distanceToDraw, 20, 50)
+        this.ctx.lineWidth = 2
+        this.ctx.strokeText(distanceToDraw, 20, 50)
+
+        // We draw coins
+        const coinsToDraw = `${this.collectedCoins} $`
+
+        this.ctx.font = 'bold 30px Arial'
+        this.ctx.fillText(coinsToDraw, 20, 80)
+        this.ctx.strokeText(coinsToDraw, 20, 80)
+
+    },
+
 
     //----- GAME OVER -----
 
     gameOver() {
 
     },
+
+
+    //----- SCORE SYSTEM -----
+    addPoints() {
+
+        this.collectedCoins++
+
+    },
+
+    addDistance() {
+
+        this.distanceDone = this.distanceDone + (this.player.speedX / 30)
+        console.log(this.distanceDone)
+
+    },
+
 
     //----- EVENT HANDLERS -----
 

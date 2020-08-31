@@ -62,9 +62,20 @@ class Bullet {
 
     }
 
-    move() {
+    move(playerSpeed) {
 
-        this.position.y += this.speed
+        if (!this.isExploding) {
+
+            this.position.y += this.speed
+
+        } else {
+
+            const compesatedSpeed = ((60 / this.FPS) * playerSpeed)
+
+            this.position.x -= compesatedSpeed
+
+        }
+
 
     }
 
