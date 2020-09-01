@@ -50,16 +50,20 @@ const Game = {
     rocketWarnings: [],
     rockets: [],
     rocketsRandomTime: {
-        minTime: 5,
-        maxTime: 15,
-        minInicial: 5,
-        maxInicial: 15
+        minTime: 2,
+        maxTime: 5,
+        minInicial: 2,
+        maxInicial: 5
     },
 
     obstacles: [],
+    obstaclesCreationTime: 6,
+
     lasers: [],
 
     coins: [],
+    coinsRowAmount: 10,
+    coinsCreationTime: 3,  // Seconds
 
     background: {
         left: undefined,
@@ -76,12 +80,6 @@ const Game = {
         value: 0
 
     },
-
-    coins: [],
-
-    coinsRowAmount: 10,
-
-    coinsCreationTime: 1,  // Seconds
 
     collectedCoins: 0,
 
@@ -130,7 +128,11 @@ const Game = {
 
         this.createFrame()
 
-        this.createWarning()
+        //this.createCoins()
+
+        //this.createWarning()
+
+        this.createObstacle()
 
     },
 
@@ -140,15 +142,9 @@ const Game = {
     createFrame() {
 
 
+
+
         setInterval(() => {
-
-            // We create coins every X secs
-            if (!this.time.isFirstFrame && this.time.framesCount % (this.coinsCreationTime * this.time.FPS) === 0) {
-
-                this.createCoins()
-
-            }
-
 
             // Player shooting
             if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
@@ -207,13 +203,65 @@ const Game = {
 
     createCoins() {
 
-        for (let i = 0; i < this.coinsRowAmount; i++) {
+        const randomShape = Math.floor(Math.random() * 3)
+        let offSet = undefined
 
-            const newCoin = new Coin(this.canvas, this.ctx, this.time.FPS, this.canvas.size.width + 25 * i, (this.canvas.size.height / 2 + (i * 4)) - 50, i)
+        let minPosY = undefined
+        let maxPosY = undefined
+        let randomPosY = undefined
 
-            this.coins.push(newCoin)
+        switch (randomShape) {
+            case 0:
 
+                offSet = 0
+                minPosY = 70
+                maxPosY = this.canvas.size.height - 95
+                randomPosY = Math.floor(Math.random() * (maxPosY - minPosY)) + minPosY
+                break;
+
+            case 1:
+
+                offSet = 7    // Coin row shape is a descending slope (LIMIT DOWN: canvas.height-160 | LIMIT UP: 70)  
+                minPosY = 70
+                maxPosY = this.canvas.size.height - 160
+                randomPosY = Math.floor(Math.random() * (maxPosY - minPosY)) + minPosY
+                break;
+
+            case 2:
+
+                offSet = -7     // Coin row shape is a ascending slope
+                minPosY = 130
+                maxPosY = this.canvas.size.height - 95
+                randomPosY = Math.floor(Math.random() * (maxPosY - minPosY)) + minPosY
+                break;
+
+            default:
+                break;
         }
+
+        setTimeout(() => {
+
+            for (let i = 0; i < this.coinsRowAmount; i++) {
+
+                const newCoin = new Coin(this.canvas, this.ctx, this.time.FPS, this.canvas.size.width + 25 * i, (i * offSet) + randomPosY, i)
+
+                this.coins.push(newCoin)
+
+            }
+
+            this.createCoins()
+
+        }, this.coinsCreationTime * 1000)
+
+
+        // const randomValue = Math.floor(Math.random() * (this.rocketsRandomTime.maxTime + 1)) + this.rocketsRandomTime.minTime
+
+        // setTimeout(() => {
+
+        //     this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
+        //     this.createWarning()
+
+        // }, randomValue * 1000);
 
     },
 
@@ -226,14 +274,6 @@ const Game = {
             this.player.bullets.splice(index, 1)
 
         }, 100)
-
-    },
-
-    destroyRocket(rocketToKill) {
-
-        const index = this.rockets.indexOf(rocketToKill)
-
-        this.rockets.splice(index, 1)
 
     },
 
@@ -264,6 +304,33 @@ const Game = {
 
     },
 
+    destroyRocket(rocketToKill) {
+
+        const index = this.rockets.indexOf(rocketToKill)
+
+        this.rockets.splice(index, 1)
+
+    },
+
+    createObstacle() {
+
+        setTimeout(() => {
+
+            this.obstacles.push(new Obstacle(this.canvas, this.ctx, this.time.FPS))
+            this.createObstacle()
+
+        }, 1000)
+
+    },
+
+    // destroyObstacle(obstacleToKill) {
+
+    //     const index = this.obstacles.indexOf(obstacleToKill)
+
+    //     this.obstacles.splice(index, 1)
+
+    // },
+
 
     //----- CHECKERS -----
 
@@ -279,6 +346,7 @@ const Game = {
 
         this.checkCoinsOut()
         this.checkRocketsOut()
+        this.checkObstaclesOut()
 
     },
 
@@ -416,6 +484,23 @@ const Game = {
         }
     },
 
+    checkObstaclesOut() {
+
+        if (this.obstacles.length) {
+
+            this.obstacles.forEach(elm => {
+
+                if (elm.position.x + elm.size.width <= 0) {
+
+                    const index = this.obstacles.indexOf(elm)
+
+                    this.obstacles.splice(index, 1)
+                }
+            })
+        }
+
+    },
+
     checkSpritesChange() {
 
         // We change the running sprite
@@ -483,6 +568,9 @@ const Game = {
         // Move warnings
         this.moveRockets()
 
+        // Move obstacles
+        this.moveObstacles()
+
     },
 
     moveBackground() {
@@ -549,6 +637,16 @@ const Game = {
 
     },
 
+    moveObstacles() {
+
+        this.obstacles.forEach(elm => {
+
+            elm.move(this.player.speedX)
+
+        })
+
+    },
+
 
     //----- RENDERING IMAGE-----
 
@@ -566,6 +664,7 @@ const Game = {
         this.drawCoins()
         this.drawScore()
         this.drawRockets()
+        this.drawObstacles()
 
     },
 
@@ -733,6 +832,23 @@ const Game = {
                 elm.size.width,
                 elm.size.height
             )
+        })
+
+    },
+
+    drawObstacles() {
+
+        this.obstacles.forEach(elm => {
+
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height
+            )
+
         })
 
     },
