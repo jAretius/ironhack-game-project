@@ -26,7 +26,7 @@ class JoyRoide {
         this.isTouchingRoof = false
 
         // Physics
-        this.speedX = 3
+        this.speedX = 7
         this.speedY = 0
 
         this.forces = {

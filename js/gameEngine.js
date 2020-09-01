@@ -96,6 +96,20 @@ const Game = {
 
     distanceDone: 0,
 
+    audio: {
+
+        mainSong: document.getElementById('main-song'),
+        shots: undefined,
+        warningSong: undefined,
+        rocket: undefined,
+        electricity: undefined,
+        hittedByRocket: undefined,
+        coins: undefined,
+
+        speedPowerUp: undefined
+
+    },
+
 
     //----- INITIALIZE METHODS -----    
 
@@ -105,6 +119,7 @@ const Game = {
 
         this.ctx = this.canvas.obejectInDOM.getContext('2d')
 
+
         // We create the player
         this.player = new JoyRoide(this.canvas, this.ctx, this, this.time.FPS, this.canvas.highLine, this.gravityForce)
 
@@ -112,7 +127,7 @@ const Game = {
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS)
         this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS)
 
-        // Random creation times
+        // Set random creation times
         this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial
         this.walkersRandomTime.maxTime = this.walkersRandomTime.maxInicial
 
@@ -148,11 +163,13 @@ const Game = {
 
         //this.createCoins()
 
-        //this.createWarning()
+        this.createWarning()
 
-        //this.createObstacle()
+        this.createObstacle()
 
         this.createWalker()
+
+        this.audio.mainSong.play()
 
     },
 
@@ -271,16 +288,6 @@ const Game = {
             this.createCoins()
 
         }, this.coinsCreationTime * 1000)
-
-
-        // const randomValue = Math.floor(Math.random() * (this.rocketsRandomTime.maxTime + 1)) + this.rocketsRandomTime.minTime
-
-        // setTimeout(() => {
-
-        //     this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
-        //     this.createWarning()
-
-        // }, randomValue * 1000);
 
     },
 
@@ -473,6 +480,7 @@ const Game = {
                 playerPosY + playerHeight > rocketsPosY) {
 
                 this.destroyRocket(elm)
+                this.gameOver()
             }
 
         })
@@ -491,6 +499,7 @@ const Game = {
                 playerPosY + playerHeight > obstaclesPosY) {
 
                 console.log('Electrocudado!!!')
+                this.gameOver()
             }
 
         })
@@ -1102,6 +1111,8 @@ const Game = {
 
     gameOver() {
 
+        this.audio.mainSong.volume = .2
+
     },
 
 
@@ -1175,6 +1186,7 @@ const Game = {
             setTimeout(() => {
 
                 this.drawPlayer()
+                this.drawScore()
 
             }, 100)
 
