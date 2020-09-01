@@ -46,12 +46,18 @@ const Game = {
     player: undefined,
 
     walkers: [],
+    walkersRandomTime: {
+        minTime: undefined,
+        maxTime: undefined,
+        minInicial: .1,
+        maxInicial: 1
+    },
 
     rocketWarnings: [],
     rockets: [],
     rocketsRandomTime: {
-        minTime: 2,
-        maxTime: 5,
+        minTime: undefined,
+        maxTime: undefined,
         minInicial: 2,
         maxInicial: 5
     },
@@ -101,6 +107,13 @@ const Game = {
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS)
         this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS)
 
+        // Random creation times
+        this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial
+        this.walkersRandomTime.maxTime = this.walkersRandomTime.maxInicial
+
+        this.rocketsRandomTime.minTime = this.rocketsRandomTime.minInicial
+        this.rocketsRandomTime.maxTime = this.rocketsRandomTime.maxInicial
+
         // We set the event listeners
         this.setEventHandlers()
 
@@ -130,9 +143,11 @@ const Game = {
 
         //this.createCoins()
 
-        //this.createWarning()
+        this.createWarning()
 
-        this.createObstacle()
+        //this.createObstacle()
+
+        this.createWalker()
 
     },
 
@@ -142,9 +157,11 @@ const Game = {
     createFrame() {
 
 
-
-
         setInterval(() => {
+
+            console.log(this.walkers)
+
+
 
             // Player shooting
             if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
@@ -279,7 +296,7 @@ const Game = {
 
     createWarning() {
 
-        const randomValue = Math.floor(Math.random() * (this.rocketsRandomTime.maxTime + 1)) + this.rocketsRandomTime.minTime
+        const randomValue = Math.random() * (this.rocketsRandomTime.maxTime + 1) + this.rocketsRandomTime.minTime
 
         setTimeout(() => {
 
@@ -319,17 +336,38 @@ const Game = {
             this.obstacles.push(new Obstacle(this.canvas, this.ctx, this.time.FPS))
             this.createObstacle()
 
-        }, 1000)
+        }, this.obstaclesCreationTime * 1000)
 
     },
 
-    // destroyObstacle(obstacleToKill) {
+    destroyObstacle(obstacleToKill) {
 
-    //     const index = this.obstacles.indexOf(obstacleToKill)
+        const index = this.obstacles.indexOf(obstacleToKill)
 
-    //     this.obstacles.splice(index, 1)
+        this.obstacles.splice(index, 1)
 
-    // },
+    },
+
+    createWalker() {
+
+        const randomTime = Math.random() * (this.walkersRandomTime.maxTime + 1) + this.walkersRandomTime.minTime
+
+        setTimeout(() => {
+
+            this.walkers.push(new Walker(this.canvas))
+            this.createWalker()
+
+        }, randomTime * 1000)
+
+    },
+
+    destroyWalker(walkerToKill) {
+
+        const index = this.walkers.indexOf(walkerToKill)
+
+        this.walkers.splice(index, 1)
+
+    },
 
 
     //----- CHECKERS -----
@@ -347,6 +385,7 @@ const Game = {
         this.checkCoinsOut()
         this.checkRocketsOut()
         this.checkObstaclesOut()
+        this.checkWalkersOut()
 
     },
 
@@ -408,7 +447,7 @@ const Game = {
         }))
 
 
-        // We Rockets Colision
+        // We check Rockets Colision
         this.rockets.forEach(elm => {
 
             const rocketsPosX = elm.position.x
@@ -422,6 +461,24 @@ const Game = {
                 playerPosY + playerHeight > rocketsPosY) {
 
                 this.destroyRocket(elm)
+            }
+
+        })
+
+        // We check Obstacles collision
+        this.obstacles.forEach(elm => {
+
+            const obstaclesPosX = elm.position.x
+            const obstaclesPosY = elm.position.y
+            const obstaclesWidth = elm.size.width
+            const obstaclesHeight = elm.size.height
+
+            if (playerPosX < obstaclesPosX + obstaclesWidth &&
+                playerPosX + playerWidth > obstaclesPosX &&
+                playerPosY < obstaclesPosY + obstaclesHeight &&
+                playerPosY + playerHeight > obstaclesPosY) {
+
+                console.log('Electrocudado!!!')
             }
 
         })
@@ -476,9 +533,7 @@ const Game = {
 
                 if (elm.position.x + elm.size.width <= 0) {
 
-                    const index = this.rockets.indexOf(elm)
-
-                    this.rockets.splice(index, 1)
+                    this.destroyRocket(elm)
                 }
             })
         }
@@ -492,13 +547,23 @@ const Game = {
 
                 if (elm.position.x + elm.size.width <= 0) {
 
-                    const index = this.obstacles.indexOf(elm)
-
-                    this.obstacles.splice(index, 1)
+                    this.destroyObstacle(elm)
                 }
             })
         }
 
+    },
+
+    checkWalkersOut() {
+
+        this.walkers.forEach(elm => {
+
+            if (elm.position.x + elm.size.width <= 0) {
+
+                this.destroyWalker(elm)
+
+            }
+        })
     },
 
     checkSpritesChange() {
@@ -562,14 +627,13 @@ const Game = {
 
         }
 
-        // We move the coins
         this.moveCoins()
 
-        // Move warnings
         this.moveRockets()
 
-        // Move obstacles
         this.moveObstacles()
+
+        this.moveWalkers()
 
     },
 
@@ -647,6 +711,16 @@ const Game = {
 
     },
 
+    moveWalkers() {
+
+        this.walkers.forEach(elm => {
+
+            elm.move(this.player.speedX)
+
+        })
+
+    },
+
 
     //----- RENDERING IMAGE-----
 
@@ -665,6 +739,7 @@ const Game = {
         this.drawScore()
         this.drawRockets()
         this.drawObstacles()
+        this.drawWalkers()
 
     },
 
@@ -839,6 +914,23 @@ const Game = {
     drawObstacles() {
 
         this.obstacles.forEach(elm => {
+
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height
+            )
+
+        })
+
+    },
+
+    drawWalkers() {
+
+        this.walkers.forEach(elm => {
 
 
             this.ctx.drawImage(
