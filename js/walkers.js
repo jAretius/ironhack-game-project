@@ -1,14 +1,12 @@
 class Walker {
 
-    constructor(canvas) {
+    constructor(canvas, posY) {
 
         this.canvas = canvas
 
         this.position = {
             x: canvas.size.width,
-            y: undefined,
-            minY: 100,
-            maxY: 120
+            y: posY
         }
 
         this.size = {
@@ -51,10 +49,6 @@ class Walker {
             default:
                 break;
         }
-
-        // Random Y position
-        const randomPosY = Math.random() * (this.position.maxY - this.position.minY) + this.position.minY
-        this.position.y = this.canvas.size.height - randomPosY
 
     }
 

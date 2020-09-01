@@ -1,11 +1,13 @@
 class JoyRoide {
 
-    constructor(canvas, ctx, FPS, highLine, gravityForce) {
+    constructor(canvas, ctx, gameCtx, FPS, highLine, gravityForce) {
 
         // Canvas
         this.canvas = canvas
 
         this.ctx = ctx
+
+        this.gameCtx = gameCtx
 
         // Measurement
         this.position = {
@@ -24,7 +26,7 @@ class JoyRoide {
         this.isTouchingRoof = false
 
         // Physics
-        this.speedX = 7
+        this.speedX = 3
         this.speedY = 0
 
         this.forces = {
@@ -133,7 +135,9 @@ class JoyRoide {
     shoot() {
 
         const newBullet = new Bullet(this.canvas, this.ctx, this.FPS, this.position)
-        this.bullets.push(newBullet)
+
+        this.gameCtx.bullets.push(newBullet)
+        //this.bullets.push(newBullet)
 
     }
 

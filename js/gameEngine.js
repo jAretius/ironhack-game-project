@@ -45,12 +45,17 @@ const Game = {
     // Game elements
     player: undefined,
 
-    walkers: [],
+    bullets: [],
+    explodedBullets: [],
+    bulletShells: [],
+
+    walkersBack: [],
+    walkersFront: [],
     walkersRandomTime: {
         minTime: undefined,
         maxTime: undefined,
         minInicial: .1,
-        maxInicial: 1
+        maxInicial: .1
     },
 
     rocketWarnings: [],
@@ -59,7 +64,7 @@ const Game = {
         minTime: undefined,
         maxTime: undefined,
         minInicial: 2,
-        maxInicial: 5
+        maxInicial: 10
     },
 
     obstacles: [],
@@ -101,7 +106,7 @@ const Game = {
         this.ctx = this.canvas.obejectInDOM.getContext('2d')
 
         // We create the player
-        this.player = new JoyRoide(this.canvas, this.ctx, this.time.FPS, this.canvas.highLine, this.gravityForce)
+        this.player = new JoyRoide(this.canvas, this.ctx, this, this.time.FPS, this.canvas.highLine, this.gravityForce)
 
         // We create background instances
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS)
@@ -143,7 +148,7 @@ const Game = {
 
         //this.createCoins()
 
-        this.createWarning()
+        //this.createWarning()
 
         //this.createObstacle()
 
@@ -159,10 +164,6 @@ const Game = {
 
         setInterval(() => {
 
-            console.log(this.walkers)
-
-
-
             // Player shooting
             if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
 
@@ -170,10 +171,11 @@ const Game = {
 
             }
 
-            this.moveAll()
-
             // Check collisions
             this.checkAllCollisions()
+
+            // We calculate the new position of all the elements
+            this.moveAll()
 
             this.checkSpritesChange()
 
@@ -286,9 +288,9 @@ const Game = {
 
         setTimeout(() => {
 
-            const index = this.player.bullets.indexOf(bulletToKill)
+            const index = this.explodedBullets.indexOf(bulletToKill)
 
-            this.player.bullets.splice(index, 1)
+            this.explodedBullets.splice(index, 1)
 
         }, 100)
 
@@ -354,18 +356,32 @@ const Game = {
 
         setTimeout(() => {
 
-            this.walkers.push(new Walker(this.canvas))
+            // Random Y position
+            const minY = 100
+            const maxY = 120
+            const randomPosY = Math.random() * (maxY - minY) + minY
+
+            if (randomPosY > 110) {
+
+                this.walkersBack.push(new Walker(this.canvas, this.canvas.size.height - randomPosY))
+
+            } else {
+
+                this.walkersFront.push(new Walker(this.canvas, this.canvas.size.height - randomPosY))
+
+            }
+
             this.createWalker()
 
-        }, randomTime * 1000)
+        }, .1 * 1000)
 
     },
 
-    destroyWalker(walkerToKill) {
+    destroyWalker(walkerToKill, array) {
 
-        const index = this.walkers.indexOf(walkerToKill)
+        const index = array.indexOf(walkerToKill)
 
-        this.walkers.splice(index, 1)
+        array.splice(index, 1)
 
     },
 
@@ -376,11 +392,7 @@ const Game = {
 
         this.playerCollision()
 
-        if (this.player.bullets.length) {
-
-            this.bulletsCollision()
-
-        }
+        this.bulletsCollision()
 
         this.checkCoinsOut()
         this.checkRocketsOut()
@@ -488,18 +500,119 @@ const Game = {
 
     bulletsCollision() {
 
-        this.player.bullets.forEach(elm => {
+        // If the array is not empty
+        if (this.bullets.length) {
 
-            // If it touches the floor
-            if (elm.position.y >= this.canvas.baseLine) {
+            this.bullets.forEach(elm => {
 
-                const index = this.player.bullets.indexOf(elm)
+                const bulletPosX = elm.position.x
+                const bulletPosY = elm.position.y
+                const bulletWidth = elm.image.shoot.size.width
+                const bulletHeight = elm.image.shoot.size.height
+
+                // Collision with walkersBack
+                const backWalkersToKill = []
+
+                this.walkersBack.forEach(e => {
+
+                    if (!e.isExploding) {
+
+                        const walkersPosX = e.position.x
+                        const walkersPosY = e.position.y
+                        const walkersWidth = e.size.width
+                        const walkersHeight = e.size.height
+
+                        if (bulletPosX < walkersPosX + walkersWidth &&
+                            bulletPosX + bulletWidth > walkersPosX &&
+                            bulletPosY < walkersPosY + walkersHeight &&
+                            bulletPosY + bulletHeight > walkersPosY) {
+
+                            backWalkersToKill.push(e)
+
+                            //this.destroyWalker(elm, this.walkersBack)
+                        }
+                    }
+
+
+                })
+
+                // Collision with walkersFront
+                const frontWalkersToKill = []
+
+                this.walkersFront.forEach(e => {
+
+                    if (!e.isExploding) {
+
+                        const walkersPosX = e.position.x
+                        const walkersPosY = e.position.y
+                        const walkersWidth = e.size.width
+                        const walkersHeight = e.size.height
+
+                        if (bulletPosX < walkersPosX + walkersWidth &&
+                            bulletPosX + bulletWidth > walkersPosX &&
+                            bulletPosY < walkersPosY + walkersHeight &&
+                            bulletPosY + bulletHeight > walkersPosY) {
+
+                            frontWalkersToKill.push(e)
+
+                            //this.destroyWalker(elm, this.walkersFront)
+                        }
+                    }
+
+
+                })
+
+                backWalkersToKill.forEach(e => {
+
+                    this.destroyWalker(e, this.walkersBack)
+
+                })
+
+                frontWalkersToKill.forEach(e => {
+
+                    this.destroyWalker(e, this.walkersFront)
+
+                })
+            })
+
+            //----- FLOOR -----
+
+
+            // Collision with floor
+            const touchingFloorBullets = []
+
+            this.bullets.forEach(elm => {
+
+                const bulletPosX = elm.position.x
+                const bulletPosY = elm.position.y
+                const bulletWidth = elm.image.shoot.size.width
+                const bulletHeight = elm.image.shoot.size.height
+
+                // If it touches the floor
+                if (elm.position.y >= this.canvas.baseLine - 15) {
+
+                    const index = this.player.bullets.indexOf(elm)
+
+                    touchingFloorBullets.push(elm)
+
+                }
+
+            })
+
+            // We delete form the bullets array all the elements touching floor
+            touchingFloorBullets.forEach(elm => {
 
                 elm.explode()
 
-            }
+                // Initiate the setTimeOut to kill the bullet
+                this.destroyBullet(elm)
 
-        })
+                this.bullets.splice(this.bullets.indexOf(elm), 1)
+                this.explodedBullets.push(elm)
+
+            })
+
+        }
 
     },
 
@@ -556,11 +669,20 @@ const Game = {
 
     checkWalkersOut() {
 
-        this.walkers.forEach(elm => {
+        this.walkersBack.forEach(elm => {
 
             if (elm.position.x + elm.size.width <= 0) {
 
-                this.destroyWalker(elm)
+                this.destroyWalker(elm, this.walkersBack)
+
+            }
+        })
+
+        this.walkersFront.forEach(elm => {
+
+            if (elm.position.x + elm.size.width <= 0) {
+
+                this.destroyWalker(elm, this.walkersFront)
 
             }
         })
@@ -621,7 +743,7 @@ const Game = {
         this.movePlayer()
 
         // We move the bullets
-        if (this.player.bullets.length) {
+        if (this.bullets.length) {
 
             this.moveBullets()
 
@@ -633,7 +755,9 @@ const Game = {
 
         this.moveObstacles()
 
-        this.moveWalkers()
+        this.moveWalkersBack()
+
+        this.moveWalkersFront()
 
     },
 
@@ -664,7 +788,7 @@ const Game = {
 
     moveBullets() {
 
-        this.player.bullets.forEach((elm) => {
+        this.bullets.forEach((elm) => {
 
             elm.move(this.player.speedX)
 
@@ -711,9 +835,19 @@ const Game = {
 
     },
 
-    moveWalkers() {
+    moveWalkersBack() {
 
-        this.walkers.forEach(elm => {
+        this.walkersBack.forEach(elm => {
+
+            elm.move(this.player.speedX)
+
+        })
+
+    },
+
+    moveWalkersFront() {
+
+        this.walkersFront.forEach(elm => {
 
             elm.move(this.player.speedX)
 
@@ -733,13 +867,14 @@ const Game = {
     drawAll() {
 
         this.drawBackgrond()
-        this.drawPlayer()
-        this.drawBullets()
-        this.drawCoins()
-        this.drawScore()
-        this.drawRockets()
         this.drawObstacles()
-        this.drawWalkers()
+        this.drawWalkersBack()
+        this.drawCoins()
+        this.drawBullets()
+        this.drawRockets()
+        this.drawPlayer()
+        this.drawWalkersFront()
+        this.drawScore()
 
     },
 
@@ -814,27 +949,27 @@ const Game = {
     drawBullets() {
 
         // If there is some bullet in the array
-        if (this.player.bullets.length) {
+        if (this.bullets.length) {
 
-            this.player.bullets.forEach(elm => {
+            this.bullets.forEach(elm => {
 
-                if (!elm.isExploding) {
-
-                    this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.image.shoot.size.width, elm.image.shoot.size.height)
-
-                } else {
-
-                    this.ctx.drawImage(elm.image.explosion.imageInstance, elm.position.x - 25, elm.position.y + 10, elm.image.explosion.size.width, elm.image.explosion.size.height)
-
-                    const index = this.player.bullets.indexOf(elm)
-
-                    //this.player.bullets.splice(index, 1)
-                    this.destroyBullet(elm)
-
-                }
-
+                this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.image.shoot.size.width, elm.image.shoot.size.height)
 
             })
+        }
+
+        // If there is some exploded bullet
+        if (this.explodedBullets.length) {
+
+            this.explodedBullets.forEach(elm => {
+
+                this.ctx.drawImage(elm.image.explosion.imageInstance, elm.position.x - 25, elm.position.y + 10, elm.image.explosion.size.width, elm.image.explosion.size.height)
+
+                //this.destroyBullet(elm)
+
+            })
+
+
         }
     },
 
@@ -928,9 +1063,26 @@ const Game = {
 
     },
 
-    drawWalkers() {
+    drawWalkersBack() {
 
-        this.walkers.forEach(elm => {
+        this.walkersBack.forEach(elm => {
+
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height
+            )
+
+        })
+
+    },
+
+    drawWalkersFront() {
+
+        this.walkersFront.forEach(elm => {
 
 
             this.ctx.drawImage(

@@ -10,7 +10,7 @@ class Bullet {
             y: playerPos.y
         }
 
-        this.speed = 30
+        this.speed = 20
 
         this.FPS = FPS
 
@@ -79,10 +79,13 @@ class Bullet {
 
     }
 
-    explode(player, index) {
+    explode() {
 
         // Change the sprite
         this.isExploding = true
+
+        this.position.y += Math.random() * (35 - 25) + 25
+        this.position.x += Math.random() * (5 + 5) - 5
 
     }
 
