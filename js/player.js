@@ -28,13 +28,14 @@ class JoyRoide {
         this.isTouchingRoof = false
 
         // Physics
-        this.speedX = 7
+        this.speedX = undefined
         this.speedY = 0
+        this.initialSpeedX = 7
 
         this.forces = {
 
             gravityForce: gravityForce,
-            shootingForce: 0.6,
+            shootingForce: 0.8,
             totalForce: this.gravityForce
 
         }
@@ -47,7 +48,8 @@ class JoyRoide {
                 x: undefined,
                 y: undefined,
                 initialX: -7,
-                initialY: 45
+                initialY: 45,
+                deadBaseLine: undefined
             },
 
             size: {
@@ -56,6 +58,8 @@ class JoyRoide {
             }
 
         }
+
+        this.isDead = false
 
         // Time
         this.FPS = FPS
@@ -78,6 +82,17 @@ class JoyRoide {
                 frames: 4,
                 frameIndex: 0,
             },
+
+            playerDead: {
+                imageInstance: undefined,
+                imagePath: './images/playerdead.png',
+            },
+
+            playerElectric: {
+                imageInstance: undefined,
+                imagePath: './images/electrocuted-player.png'
+            }
+
 
         }
 
@@ -102,6 +117,17 @@ class JoyRoide {
         this.image.gunFire.imageInstance = new Image()
         this.image.gunFire.imageInstance.src = this.image.gunFire.imagePath
 
+        // We instantiate the playerdead image
+        this.image.playerDead.imageInstance = new Image()
+        this.image.playerDead.imageInstance.src = this.image.playerDead.imagePath
+
+        // We instantiate the playerelectrocuted image
+        this.image.playerElectric.imageInstance = new Image()
+        this.image.playerElectric.imageInstance.src = this.image.playerElectric.imagePath
+
+        // We set player speed
+        this.speedX = this.initialSpeedX
+
         // We set the gunfire size
         this.gunFire.position.y = this.position.y + this.gunFire.position.initialY
         this.gunFire.position.x = this.position.x + this.gunFire.position.initialX
@@ -110,43 +136,51 @@ class JoyRoide {
         this.size.collisionWidth = this.size.width / this.image.player.frames
         this.size.collisionHeight = this.size.height / this.image.player.rows
 
+        // Dead baseLine
+        this.position.deadBaseLine = this.canvas.baseLine + 30
+
     }
 
     move() {
 
+        if (this.isDead && this.isTouchingFloor) {
 
-        // If is shooting
-        if (this.isShooting) {
+            if (this.speedX <= 0) {
 
-            // Is it already touching the roof?
-            if (this.isTouchingRoof) {
+                this.speedX = 0
 
-                this.position.y = this.position.maxPosY
+                this.gameCtx.gameOver()
 
             } else {
 
-                //this.position.y -= this.forces.shootingForce
-
-                // We update the velocity
-                this.speedY = this.speedY + (0.5)
-                this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
+                this.speedX -= 0.1
 
             }
 
 
-        } else {    // If is not shooting
+        }
 
-            // Is it already touching the floor?
-            if (this.isTouchingFloor) {
+        // If is shooting and is already touching the roof
+        if (this.isShooting && this.isTouchingRoof) {
+
+            this.position.y = this.position.maxPosY
+
+        } else if (!this.isShooting && this.isTouchingFloor) {  // If is not shooting and already touching the floor
+
+            if (!this.isDead) {
 
                 this.position.y = this.position.initialPosY
 
             } else {
 
-                this.speedY = this.speedY + (-0.3)
-                this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
+                this.position.deadBaseLine
 
             }
+
+        } else {
+
+            this.speedY = this.speedY + this.forces.totalForce
+            this.position.y = this.position.y - this.speedY + (this.forces.totalForce) / 2
 
         }
 
@@ -156,7 +190,7 @@ class JoyRoide {
 
     shoot() {
 
-        const newBullet = new Bullet(this.canvas, this.ctx, this.FPS, this.position)
+        const newBullet = new Bullet(this.canvas, this.ctx, this.FPS, this.position, this.gameCtx)
 
         this.gameCtx.bullets.push(newBullet)
         //this.bullets.push(newBullet)

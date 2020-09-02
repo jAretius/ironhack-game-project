@@ -1,9 +1,10 @@
 class Bullet {
 
-    constructor(canvas, ctx, FPS, playerPos) {
+    constructor(canvas, ctx, FPS, playerPos, gameCtx) {
 
         this.canvas = canvas
         this.ctx = ctx
+        this.gameCtx = gameCtx
 
         this.position = {
             x: playerPos.x + 16,
@@ -29,10 +30,12 @@ class Bullet {
             explosion: {
                 imageInstance: undefined,
                 imageSource: './images/bullet-impact.png',
+                frames: 2,
+                frameIndex: 0,
 
                 size: {
-                    width: 70,
-                    height: 30
+                    width: 50,
+                    height: 50
                 }
             },
 
@@ -45,6 +48,11 @@ class Bullet {
     }
 
     init() {
+
+        const offsetY = 10
+
+        // We set a little offset for the bullets
+        this.position.x = this.position.x + ((Math.random() * (2 * offsetY) - offsetY))
 
         // Image for the shoot
         this.image.shoot.imageInstance = new Image()
@@ -84,9 +92,28 @@ class Bullet {
         // Change the sprite
         this.isExploding = true
 
-        this.position.y += Math.random() * (35 - 25) + 25
-        this.position.x += Math.random() * (5 + 5) - 5
+        if (this.position.y > this.canvas.baseLine) {
 
+            this.position.y = this.canvas.baseLine + 20
+
+        } else {
+
+            this.position.y += Math.random() * (35 - 25) + 20
+        }
+
+        this.position.x += Math.random() * (5 + 5) - 30
+
+        setTimeout(() => {
+
+            this.image.explosion.frameIndex = 1
+
+            setTimeout(() => {
+
+                this.gameCtx.destroyBullet(this)
+
+            }, 100);
+
+        }, 50);
     }
 
 }

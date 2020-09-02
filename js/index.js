@@ -7,6 +7,24 @@ window.onload = function () {
 
     };
 
+    document.getElementById('my-canvas').onclick = function () {
+
+        document.getElementById("start-button").disabled = true
+
+        if (!Game.isGameOver) {
+
+            Game.start();
+
+        } else {
+
+            Game.start()
+
+        }
+
+
+    };
+
     Game.init()
+    document.getElementById('my-canvas').style.opacity = 1
 
 }

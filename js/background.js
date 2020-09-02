@@ -1,6 +1,6 @@
 class Background {
 
-    constructor(canvas, ctx, initialPosX, FPS) {
+    constructor(canvas, ctx, initialPosX, FPS, backgroundType = 'main') {
 
         this.ctx = ctx
 
@@ -18,7 +18,13 @@ class Background {
 
         this.imageInstance = undefined
 
-        this.imagePath = './images/bg.jpg'
+        this.imagePathMain = './images/bg.jpg'
+
+        this.imagePathInitial = './images/initial-background.png'
+
+        this.imagePathGameOver = './images/game-over.jpg'
+
+        this.backgroundType = backgroundType
 
         this.init()
 
@@ -28,7 +34,28 @@ class Background {
 
         this.imageInstance = new Image()
 
-        this.imageInstance.src = this.imagePath
+        switch (this.backgroundType) {
+            case 'main':
+
+                this.imageInstance.src = this.imagePathMain
+
+                break;
+
+            case 'initial':
+
+                this.imageInstance.src = this.imagePathInitial
+
+                break;
+
+            case 'gameOver':
+
+                this.imageInstance.src = this.imagePathGameOver
+
+                break;
+
+            default:
+                break;
+        }
 
     }
 

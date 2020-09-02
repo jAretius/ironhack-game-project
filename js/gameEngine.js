@@ -22,6 +22,8 @@ const Game = {
     },
     ctx: undefined,
 
+    gameEngineInterval: undefined,
+
     // Time
     time: {
 
@@ -32,13 +34,23 @@ const Game = {
     },
 
     // Physics
-    gravityForce: 0.2,
+    gravityForce: 0.3,
 
     // Controls
     keys: {
 
         SPACE: 32,
         UP: 38
+
+    },
+
+    // Creation timeouts
+    timeOuts: {
+
+        rockets: undefined,
+        coins: undefined,
+        walkers: undefined,
+        obstacles: undefined
 
     },
 
@@ -63,8 +75,8 @@ const Game = {
     rocketsRandomTime: {
         minTime: undefined,
         maxTime: undefined,
-        minInicial: 2,
-        maxInicial: 10
+        minInicial: 1,
+        maxInicial: 2
     },
 
     obstacles: [],
@@ -78,19 +90,12 @@ const Game = {
 
     background: {
         left: undefined,
-        right: undefined
+        right: undefined,
+        initial: undefined,
+        gameOver: undefined
     },
 
-    // Game points system
-    distanceDone: {
-
-        position: {
-            x: 0,
-            y: 0
-        },
-        value: 0
-
-    },
+    // Game points system   
 
     collectedCoins: 0,
 
@@ -98,18 +103,20 @@ const Game = {
 
     audio: {
 
+        breakWallSong: document.getElementById('break-wall'),
         mainSong: document.getElementById('main-song'),
-        running: document.getElementById('run-sound'),
-        shots: undefined,
-        warningSong: undefined,
-        rocket: undefined,
-        electricity: undefined,
-        hittedByRocket: undefined,
-        coins: undefined,
+        runFloorSong: document.getElementById('runfloor'),
+        shotsSong: document.getElementById('shooting'),
+        coinsSong: document.getElementById('coins'),
+        warningSong: document.getElementById('warning'),
+        rocketSong: document.getElementById('rocket'),
+        electricitySong: document.getElementById('zag'),
 
         speedPowerUp: undefined
 
     },
+
+    isGameOver: false,
 
 
     //----- INITIALIZE METHODS -----    
@@ -127,6 +134,10 @@ const Game = {
         // We create background instances
         this.background.left = new Background(this.canvas, this.ctx, 0, this.time.FPS)
         this.background.right = new Background(this.canvas, this.ctx, this.canvas.size.width, this.time.FPS)
+
+        this.background.initial = new Background(this.canvas, this.ctx, 0, this.time.FPS, 'initial')
+
+        this.background.gameOver = new Background(this.canvas, this.ctx, 0, this.time.FPS, 'gameOver')
 
         // Set random creation times
         this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial
@@ -153,6 +164,23 @@ const Game = {
 
     reset() {
 
+        // We clear async behaviour
+        clearInterval(this.gameEngineInterval)
+
+        clearTimeout(this.timeOuts.rockets)
+        clearTimeout(this.timeOuts.coins)
+        clearTimeout(this.timeOuts.walkers)
+        clearTimeout(this.timeOuts.obstacles)
+
+        // We reset values
+        this.isGameOver = false
+        this.distanceDone = 0
+        this.collectedCoins = 0
+        this.player.isDead = false
+        this.time.framesCount = 0
+
+        this.player.speedX = this.player.initialSpeedX
+
     },
 
 
@@ -160,15 +188,17 @@ const Game = {
 
     start() {
 
+        this.reset()
+
         this.createFrame()
 
-        this.createCoins()
+        //this.createCoins()
 
         this.createWarning()
 
-        this.createObstacle()
+        //this.createObstacle()
 
-        this.createWalker()
+        //this.createWalker()
 
         this.audio.mainSong.play()
 
@@ -180,54 +210,64 @@ const Game = {
     createFrame() {
 
 
-        setInterval(() => {
+        this.gameEngineInterval = setInterval(() => {
 
-            console.log(this.player.isTouchingFloor)
+            if (!this.isGameOver) {
 
 
-            // Player shooting
-            if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
 
-                this.player.shoot()
+                // Player shooting
+                if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
+
+                    this.player.shoot()
+
+                }
+
+                // We calculate the new position of all the elements
+                this.moveAll()
+
+                // Check collisions
+                this.checkAllCollisions()
+
+                // Move game elements
+                this.clearAll()
+
+                // We draw all
+                this.drawAll()
+
+                // We add distance
+                this.addDistance()
+
+                // We update the counters
+
+                // Frames counter
+                this.time.framesCount++
+
+                // Shooting time counter
+                if (this.player.isShooting) {
+
+                    this.player.fireTime++
+
+                }
+
+                // Frames count reseter
+                if (this.time.framesCount === 6000) {
+
+                    this.time.framesCount = 0
+
+                }
+
+                this.time.isFirstFrame = false
+
+
+
+            } else {
+
+                this.clearAll()
+                this.drawGameOver()
+                this.drawScore()
 
             }
-
-            // We calculate the new position of all the elements
-            this.moveAll()
-
-            // Check collisions
-            this.checkAllCollisions()
-
-            // Move game elements
-            this.clearAll()
-
-            // We draw all
-            this.drawAll()
-
-            // We add distance
-            this.addDistance()
-
-            // We update the counters
-
-            // Frames counter
-            this.time.framesCount++
-
-            // Shooting time counter
-            if (this.player.isShooting) {
-
-                this.player.fireTime++
-
-            }
-
-            // Frames count reseter
-            if (this.time.framesCount === 6000) {
-
-                this.time.framesCount = 0
-
-            }
-
-            this.time.isFirstFrame = false
-
         }, 1000 / this.time.FPS)
 
     },
@@ -277,7 +317,7 @@ const Game = {
                 break;
         }
 
-        setTimeout(() => {
+        this.timeOuts.coins = setTimeout(() => {
 
             for (let i = 0; i < this.coinsRowAmount; i++) {
 
@@ -295,13 +335,9 @@ const Game = {
 
     destroyBullet(bulletToKill) {
 
-        setTimeout(() => {
+        const index = this.explodedBullets.indexOf(bulletToKill)
 
-            const index = this.explodedBullets.indexOf(bulletToKill)
-
-            this.explodedBullets.splice(index, 1)
-
-        }, 100)
+        this.explodedBullets.splice(index, 1)
 
     },
 
@@ -309,7 +345,7 @@ const Game = {
 
         const randomValue = Math.random() * (this.rocketsRandomTime.maxTime + 1) + this.rocketsRandomTime.minTime
 
-        setTimeout(() => {
+        this.timeOuts.rockets = setTimeout(() => {
 
             this.rocketWarnings.push(new Warning(this.canvas, this.ctx, this.player.position.y, this))
             this.createWarning()
@@ -342,7 +378,7 @@ const Game = {
 
     createObstacle() {
 
-        setTimeout(() => {
+        this.timeOuts.obstacles = setTimeout(() => {
 
             this.obstacles.push(new Obstacle(this.canvas, this.ctx, this.time.FPS))
             this.createObstacle()
@@ -363,7 +399,7 @@ const Game = {
 
         const randomTime = Math.random() * this.walkersRandomTime.maxTime + this.walkersRandomTime.minTime
 
-        setTimeout(() => {
+        this.timeOuts.walkers = setTimeout(() => {
 
             // Random Y position
             const minY = 100
@@ -417,11 +453,19 @@ const Game = {
         const playerWidth = this.player.size.collisionWidth + 25
         const playerHeight = this.player.size.collisionHeight + 25
 
+        let floorLimit = this.canvas.baseLine
+
+        if (this.player.isDead) {
+
+            floorLimit = this.player.position.deadBaseLine
+
+        }
+
         // Floor collision
-        if (playerPosY >= this.canvas.baseLine) {
+        if (playerPosY >= floorLimit) {
 
             this.player.isTouchingFloor = true
-            this.player.position.y = this.canvas.baseLine
+            this.player.position.y = floorLimit
             this.player.speedY = 0
 
             this.playRunAudio()
@@ -485,8 +529,13 @@ const Game = {
                 playerPosY < rocketsPosY + rocketsHeight &&
                 playerPosY + playerHeight > rocketsPosY) {
 
+                this.player.isDead = true
                 this.destroyRocket(elm)
-                this.gameOver()
+
+                this.animateDead()
+
+                this.audio.mainSong.volume = .2
+
             }
 
         })
@@ -618,9 +667,6 @@ const Game = {
             touchingFloorBullets.forEach(elm => {
 
                 elm.explode()
-
-                // Initiate the setTimeOut to kill the bullet
-                this.destroyBullet(elm)
 
                 this.bullets.splice(this.bullets.indexOf(elm), 1)
                 this.explodedBullets.push(elm)
@@ -857,9 +903,14 @@ const Game = {
 
     drawBackgrond() {
 
-
         this.ctx.drawImage(this.background.left.imageInstance, this.background.left.position.x, 0, this.canvas.size.width, this.canvas.size.height)
         this.ctx.drawImage(this.background.right.imageInstance, this.background.right.position.x, 0, this.canvas.size.width, this.canvas.size.height)
+
+    },
+
+    drawInitialBackground() {
+
+        this.ctx.drawImage(this.background.initial.imageInstance, 0, 0, this.canvas.size.width, this.canvas.size.height)
 
     },
 
@@ -869,108 +920,135 @@ const Game = {
 
     drawPlayer() {
 
-        if (!this.player.isShooting) {
+        if (!this.player.isDead) {
 
-            this.player.spriteChangeTime = .1
+            if (!this.player.isShooting) {
 
-        } else {
+                this.player.spriteChangeTime = .1
 
-            this.player.spriteChangeTime = .05
+            } else {
 
-        }
-
-        // We change the sprite row depending on is touching floor (run) or not (fly)
-        if (this.player.isTouchingFloor) {
-
-            this.player.image.player.rowIndex = 0
-
-        } else {
-
-            this.player.image.player.rowIndex = 1
-
-        }
-
-        // We change the running sprite
-        if (!this.player.isTouchingFloor && !this.player.isShooting) {
-
-            this.player.image.player.frameIndex = 3
-
-        } else {
-
-            if (this.time.framesCount % (this.time.FPS * this.player.spriteChangeTime) === 0) {
-
-                if (this.player.image.player.frameIndex === this.player.image.player.frames - 1) {
-
-                    this.player.image.player.frameIndex = 0
-                    this.player.image.gunFire.frameIndex = 0
-
-                } else {
-
-                    this.player.image.player.frameIndex += 1
-                    this.player.image.gunFire.frameIndex += 1
-                }
+                this.player.spriteChangeTime = .05
 
             }
+
+            // We change the sprite row depending on is touching floor (run) or not (fly)
+            if (this.player.isTouchingFloor) {
+
+                this.player.image.player.rowIndex = 0
+
+            } else {
+
+                this.player.image.player.rowIndex = 1
+
+            }
+
+            // We change the running sprite
+            if (!this.player.isTouchingFloor && !this.player.isShooting) {
+
+                this.player.image.player.frameIndex = 3
+
+            } else {
+
+                if (this.time.framesCount % (this.time.FPS * this.player.spriteChangeTime) === 0) {
+
+                    if (this.player.image.player.frameIndex === this.player.image.player.frames - 1) {
+
+                        this.player.image.player.frameIndex = 0
+                        this.player.image.gunFire.frameIndex = 0
+
+                    } else {
+
+                        this.player.image.player.frameIndex += 1
+                        this.player.image.gunFire.frameIndex += 1
+                    }
+
+                }
+            }
+
+            if (!this.player.isShooting) {
+
+                this.player.image.gunFire.frameIndex = 3
+
+            }
+
+
+            // Draw player
+            this.ctx.drawImage(
+                this.player.image.player.imageInstance,
+                this.player.image.player.frameIndex * Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
+                this.player.image.player.rowIndex * Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
+                Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
+                Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
+                this.player.position.x,
+                this.player.position.y,
+                (this.player.size.width * 2) / this.player.image.player.frames,
+                this.player.size.height)
+
+            // Draw gun fire
+            this.ctx.drawImage(
+                this.player.image.gunFire.imageInstance,
+                this.player.image.gunFire.frameIndex * Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
+                0,
+                Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
+                this.player.image.gunFire.imageInstance.height,
+                this.player.gunFire.position.x,
+                this.player.gunFire.position.y,
+                (this.player.gunFire.size.width * 2) / this.player.image.gunFire.frames,
+                this.player.gunFire.size.height)
+
+        } else {
+
+            this.ctx.drawImage(
+                this.player.image.playerDead.imageInstance,
+
+                this.player.position.x,
+                this.player.position.y,
+                this.player.size.width / 1.8,
+                this.player.size.height / 1.8
+            )
+
+            // this.ctx.drawImage(
+            //     this.player.image.playerDead.imageInstance,
+
+            //     200,
+            //     200,
+            //     200,
+            //     200)
+
         }
 
-        if (!this.player.isShooting) {
-
-            this.player.image.gunFire.frameIndex = 3
-
-        }
-
-
-        // Draw player
-        this.ctx.drawImage(
-            this.player.image.player.imageInstance,
-            this.player.image.player.frameIndex * Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
-            this.player.image.player.rowIndex * Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
-            Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
-            Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
-            this.player.position.x,
-            this.player.position.y,
-            (this.player.size.width * 2) / this.player.image.player.frames,
-            this.player.size.height)
-
-        // Draw gun fire
-        this.ctx.drawImage(
-            this.player.image.gunFire.imageInstance,
-            this.player.image.gunFire.frameIndex * Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
-            0,
-            Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
-            this.player.image.gunFire.imageInstance.height,
-            this.player.gunFire.position.x,
-            this.player.gunFire.position.y,
-            (this.player.gunFire.size.width * 2) / this.player.image.gunFire.frames,
-            this.player.gunFire.size.height)
 
     },
 
     drawBullets() {
 
         // If there is some bullet in the array
-        if (this.bullets.length) {
 
-            this.bullets.forEach(elm => {
+        this.bullets.forEach(elm => {
 
-                this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.image.shoot.size.width, elm.image.shoot.size.height)
+            this.ctx.drawImage(elm.image.shoot.imageInstance, elm.position.x, elm.position.y, elm.image.shoot.size.width, elm.image.shoot.size.height)
 
-            })
-        }
+        })
 
         // If there is some exploded bullet
-        if (this.explodedBullets.length) {
 
-            this.explodedBullets.forEach(elm => {
+        this.explodedBullets.forEach(elm => {
 
-                this.ctx.drawImage(elm.image.explosion.imageInstance, elm.position.x - 25, elm.position.y + 10, elm.image.explosion.size.width, elm.image.explosion.size.height)
+            this.ctx.drawImage(
+                elm.image.explosion.imageInstance,
+                elm.image.explosion.frameIndex * Math.floor(elm.image.explosion.imageInstance.width / elm.image.explosion.frames),
+                0,
+                elm.image.explosion.imageInstance.width / 2,
+                elm.image.explosion.imageInstance.height,
 
-                //this.destroyBullet(elm)
 
-            })
+                elm.position.x,
+                elm.position.y,
+                elm.image.explosion.size.width,
+                elm.image.explosion.size.height)
 
-
-        }
+        })
     },
 
     drawCoins() {
@@ -1119,12 +1197,40 @@ const Game = {
 
     },
 
+    drawGameOver() {
+
+        this.ctx.drawImage(this.background.gameOver.imageInstance, 0, 0, this.canvas.size.width, this.canvas.size.height)
+
+    },
+
+    animateDead() {
+
+        this.player.isShooting = false
+        this.player.forces.totalForce = 0 - this.player.forces.gravityForce
+
+        this.audio.shotsSong.pause()
+
+    },
+
 
     //----- GAME OVER -----
 
     gameOver() {
 
-        this.audio.mainSong.volume = .2
+
+        setTimeout(() => {
+
+            this.isGameOver = true
+
+            // We empty all the arrays
+            this.rockets = []
+            this.rocketWarnings = []
+            this.coins = []
+            this.walkersBack = []
+            this.walkersFront = []
+            this.obstacles = []
+
+        }, 1000);
 
     },
 
@@ -1161,13 +1267,13 @@ const Game = {
 
     playRunAudio() {
 
-        this.audio.running.play()
+        this.audio.runFloorSong.play()
 
     },
 
     stopRunAudio() {
 
-        this.audio.running.pause()
+        this.audio.runFloorSong.pause()
 
     },
 
@@ -1180,12 +1286,18 @@ const Game = {
         // Controls
         window.onkeypress = (e) => {
 
-            if (e.keyCode === this.keys.SPACE) {
+            if (!this.player.isDead) {
 
-                this.player.isShooting = true
-                this.player.forces.totalForce = this.player.forces.shootingForce - this.gravityForce
+                if (e.keyCode === this.keys.SPACE) {
+
+                    this.player.isShooting = true
+                    this.player.forces.totalForce = this.player.forces.shootingForce - this.gravityForce
+                    this.audio.shotsSong.play()
+
+                }
 
             }
+
 
         }
 
@@ -1196,6 +1308,8 @@ const Game = {
                 this.player.isShooting = false
                 this.player.forces.totalForce = 0 - this.player.forces.gravityForce
 
+                this.audio.shotsSong.pause()
+
             }
 
             this.player.fireTime = 0
@@ -1203,22 +1317,28 @@ const Game = {
         }
 
         // Image loading
-        this.background.left.imageInstance.onload = () => {
+        this.background.initial.imageInstance.onload = () => {
 
-            this.drawBackgrond()
-
-        }
-
-        this.player.image.player.imageInstance.onload = () => {
-
-            setTimeout(() => {
-
-                this.drawPlayer()
-                this.drawScore()
-
-            }, 100)
+            this.drawInitialBackground()
 
         }
+
+        // this.background.left.imageInstance.onload = () => {
+
+        //     this.drawBackgrond()
+
+        // }
+
+        // this.player.image.player.imageInstance.onload = () => {
+
+        //     setTimeout(() => {
+
+        //         this.drawPlayer()
+        //         this.drawScore()
+
+        //     }, 100)
+
+        // }
 
     },
 }
