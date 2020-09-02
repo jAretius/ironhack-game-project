@@ -54,7 +54,7 @@ const Game = {
     walkersRandomTime: {
         minTime: undefined,
         maxTime: undefined,
-        minInicial: .1,
+        minInicial: .05,
         maxInicial: .1
     },
 
@@ -68,13 +68,13 @@ const Game = {
     },
 
     obstacles: [],
-    obstaclesCreationTime: 6,
+    obstaclesCreationTime: .5,
 
     lasers: [],
 
     coins: [],
     coinsRowAmount: 10,
-    coinsCreationTime: 3,  // Seconds
+    coinsCreationTime: 0.5,  // Seconds
 
     background: {
         left: undefined,
@@ -163,11 +163,11 @@ const Game = {
 
         //this.createCoins()
 
-        this.createWarning()
+        //this.createWarning()
 
         this.createObstacle()
 
-        this.createWalker()
+        //this.createWalker()
 
         this.audio.mainSong.play()
 
@@ -181,6 +181,9 @@ const Game = {
 
         setInterval(() => {
 
+            console.log(this.player.isTouchingFloor)
+
+
             // Player shooting
             if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
 
@@ -188,13 +191,11 @@ const Game = {
 
             }
 
-            // Check collisions
-            this.checkAllCollisions()
-
             // We calculate the new position of all the elements
             this.moveAll()
 
-            this.checkSpritesChange()
+            // Check collisions
+            this.checkAllCollisions()
 
             // Move game elements
             this.clearAll()
@@ -359,7 +360,7 @@ const Game = {
 
     createWalker() {
 
-        const randomTime = Math.random() * (this.walkersRandomTime.maxTime + 1) + this.walkersRandomTime.minTime
+        const randomTime = Math.random() * this.walkersRandomTime.maxTime + this.walkersRandomTime.minTime
 
         setTimeout(() => {
 
@@ -380,7 +381,7 @@ const Game = {
 
             this.createWalker()
 
-        }, .1 * 1000)
+        }, randomTime * 1000)
 
     },
 
@@ -412,8 +413,8 @@ const Game = {
 
         const playerPosX = this.player.position.x
         const playerPosY = this.player.position.y
-        const playerWidth = this.player.size.width
-        const playerHeight = this.player.size.height
+        const playerWidth = this.player.size.collisionWidth + 25
+        const playerHeight = this.player.size.collisionHeight + 25
 
         // Floor collision
         if (playerPosY >= this.canvas.baseLine) {
@@ -697,51 +698,6 @@ const Game = {
         })
     },
 
-    checkSpritesChange() {
-
-        // We change the running sprite
-        if (this.player.isTouchingFloor) {
-
-            if (this.time.framesCount % (this.time.FPS * this.player.runSpriteTime) === 0) {
-
-                if (this.player.image.floor.frameIndex === 0) {
-
-                    this.player.image.floor.frameIndex = 1
-
-                } else {
-
-                    this.player.image.floor.frameIndex = 0
-
-                }
-
-            }
-
-        }
-
-        // we change the sprite Coins
-        if (this.coins.length) {
-
-            if (this.time.framesCount % (this.time.FPS * this.coins[0].flipCoinTime) === 0) {
-
-                this.coins.forEach(elm => {
-
-                    const index = this.coins.indexOf(elm)
-
-                    if (elm.image.frameIndex !== elm.image.frames - 1) {
-
-                        elm.image.frameIndex += 1
-
-                    } else {
-
-                        elm.image.frameIndex = 0
-
-                    }
-                })
-            }
-        }
-
-    },
-
 
     //----- MOTION METHODS -----    
 
@@ -908,50 +864,80 @@ const Game = {
 
     drawPlayer() {
 
-        // If is touching floor
-        if (this.player.isTouchingFloor) {
+        if (!this.player.isShooting) {
 
-            this.ctx.drawImage(
-                this.player.image.floor.imageInstance,
-                this.player.image.floor.frameIndex * Math.floor(this.player.image.floor.imageInstance.width / this.player.image.floor.frames),
-                0,
-                Math.floor(this.player.image.floor.imageInstance.width / this.player.image.floor.frames),
-                this.player.image.floor.imageInstance.height,
-                this.player.position.x,
-                this.player.position.y,
-                (this.player.size.width * 2) / this.player.image.floor.frames,
-                this.player.size.height
-            )
+            this.player.spriteChangeTime = .1
 
-        } else {    // If is not touching floor
+        } else {
 
-            // If is shooting
-            if (this.player.isShooting) {
-
-                this.ctx.drawImage(
-                    this.player.image.flyingShooting.imageInstance,
-                    this.player.position.x,
-                    this.player.position.y,
-                    this.player.size.width,
-                    this.player.size.height + 26
-                )
-
-            } else {    // If is not shooting
-
-                this.ctx.drawImage(
-                    this.player.image.flying.imageInstance,
-                    this.player.position.x,
-                    this.player.position.y,
-                    this.player.size.width,
-                    this.player.size.height
-                )
-
-            }
+            this.player.spriteChangeTime = .05
 
         }
 
-        // If is touching floor
+        // We change the sprite row depending on is touching floor (run) or not (fly)
+        if (this.player.isTouchingFloor) {
 
+            this.player.image.player.rowIndex = 0
+
+        } else {
+
+            this.player.image.player.rowIndex = 1
+
+        }
+
+        // We change the running sprite
+        if (!this.player.isTouchingFloor && !this.player.isShooting) {
+
+            this.player.image.player.frameIndex = 3
+
+        } else {
+
+            if (this.time.framesCount % (this.time.FPS * this.player.spriteChangeTime) === 0) {
+
+                if (this.player.image.player.frameIndex === this.player.image.player.frames - 1) {
+
+                    this.player.image.player.frameIndex = 0
+                    this.player.image.gunFire.frameIndex = 0
+
+                } else {
+
+                    this.player.image.player.frameIndex += 1
+                    this.player.image.gunFire.frameIndex += 1
+                }
+
+            }
+        }
+
+        if (!this.player.isShooting) {
+
+            this.player.image.gunFire.frameIndex = 3
+
+        }
+
+
+        // Draw player
+        this.ctx.drawImage(
+            this.player.image.player.imageInstance,
+            this.player.image.player.frameIndex * Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
+            this.player.image.player.rowIndex * Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
+            Math.floor(this.player.image.player.imageInstance.width / this.player.image.player.frames),
+            Math.floor(this.player.image.player.imageInstance.height / this.player.image.player.rows),
+            this.player.position.x,
+            this.player.position.y,
+            (this.player.size.width * 2) / this.player.image.player.frames,
+            this.player.size.height)
+
+        // Draw gun fire
+        this.ctx.drawImage(
+            this.player.image.gunFire.imageInstance,
+            this.player.image.gunFire.frameIndex * Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
+            0,
+            Math.floor(this.player.image.gunFire.imageInstance.width / this.player.image.gunFire.frames),
+            this.player.image.gunFire.imageInstance.height,
+            this.player.gunFire.position.x,
+            this.player.gunFire.position.y,
+            (this.player.gunFire.size.width * 2) / this.player.image.gunFire.frames,
+            this.player.gunFire.size.height)
 
     },
 
@@ -983,6 +969,28 @@ const Game = {
     },
 
     drawCoins() {
+
+        // we change the sprite Coins
+        if (this.coins.length) {
+
+            if (this.time.framesCount % (this.time.FPS * this.coins[0].flipCoinTime) === 0) {
+
+                this.coins.forEach(elm => {
+
+                    const index = this.coins.indexOf(elm)
+
+                    if (elm.image.frameIndex !== elm.image.frames - 1) {
+
+                        elm.image.frameIndex += 1
+
+                    } else {
+
+                        elm.image.frameIndex = 0
+
+                    }
+                })
+            }
+        }
 
         this.coins.forEach(elm => {
 
@@ -1181,7 +1189,7 @@ const Game = {
 
         }
 
-        this.player.image.floor.imageInstance.onload = () => {
+        this.player.image.player.imageInstance.onload = () => {
 
             setTimeout(() => {
 

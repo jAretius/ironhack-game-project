@@ -29,7 +29,7 @@ class Obstacle {
 
     init() {
 
-        const obstacleType = Math.floor(Math.random() * 6)
+        const obstacleType = Math.floor(Math.random() * 4)
         this.image.imageInstance = new Image()
 
         let minPosY = undefined

@@ -18,8 +18,10 @@ class JoyRoide {
         }
 
         this.size = {
-            width: 48,
-            height: 54
+            width: 100,
+            height: 54,
+            collisionWidth: undefined,
+            collisionHeight: undefined
         }
 
         this.isTouchingFloor = true
@@ -39,33 +41,47 @@ class JoyRoide {
 
         this.isShooting = false
 
+        this.gunFire = {
+
+            position: {
+                x: undefined,
+                y: undefined,
+                initialX: -7,
+                initialY: 45
+            },
+
+            size: {
+                width: 100,
+                height: 54
+            }
+
+        }
+
         // Time
         this.FPS = FPS
 
         // Image
         this.image = {
 
-            floor: {
+            player: {
                 imageInstance: undefined,
-                imagePath: './images/player-walking.png',
-                frames: 2,
-                frameIndex: 0
+                imagePath: './images/player.png',
+                rows: 2,
+                rowIndex: 0,
+                frames: 4,
+                frameIndex: 0,
             },
 
-            flying: {
+            gunFire: {
                 imageInstance: undefined,
-                imagePath: './images/player-flying.png'
+                imagePath: './images/gunfire.png',
+                frames: 4,
+                frameIndex: 0,
             },
-
-            flyingShooting: {
-                imageInstance: undefined,
-                imagePath: './images/player-flying-shooting.png'
-            }
 
         }
 
-        this.runSpriteTime = .1
-
+        this.spriteChangeTime = .1
         this.bullets = []
         this.explodedBullets = []
         this.bulletShells = []
@@ -78,17 +94,21 @@ class JoyRoide {
 
     init() {
 
-        // We instantiate floor image
-        this.image.floor.imageInstance = new Image()
-        this.image.floor.imageInstance.src = this.image.floor.imagePath
+        // We instantiate the player image
+        this.image.player.imageInstance = new Image()
+        this.image.player.imageInstance.src = this.image.player.imagePath
 
-        // We instantiate flying image
-        this.image.flying.imageInstance = new Image()
-        this.image.flying.imageInstance.src = this.image.flying.imagePath
+        // We instantiate the gunfire image
+        this.image.gunFire.imageInstance = new Image()
+        this.image.gunFire.imageInstance.src = this.image.gunFire.imagePath
 
-        // We instantiate flying shooting
-        this.image.flyingShooting.imageInstance = new Image()
-        this.image.flyingShooting.imageInstance.src = this.image.flyingShooting.imagePath
+        // We set the gunfire size
+        this.gunFire.position.y = this.position.y + this.gunFire.position.initialY
+        this.gunFire.position.x = this.position.x + this.gunFire.position.initialX
+
+        // Collision values
+        this.size.collisionWidth = this.size.width / this.image.player.frames
+        this.size.collisionHeight = this.size.height / this.image.player.rows
 
     }
 
@@ -129,6 +149,8 @@ class JoyRoide {
             }
 
         }
+
+        this.gunFire.position.y = this.position.y + this.gunFire.position.initialY
 
     }
 
