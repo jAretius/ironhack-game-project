@@ -68,13 +68,13 @@ const Game = {
     },
 
     obstacles: [],
-    obstaclesCreationTime: .5,
+    obstaclesCreationTime: 5,
 
     lasers: [],
 
     coins: [],
     coinsRowAmount: 10,
-    coinsCreationTime: 0.5,  // Seconds
+    coinsCreationTime: 7,  // Seconds
 
     background: {
         left: undefined,
@@ -99,6 +99,7 @@ const Game = {
     audio: {
 
         mainSong: document.getElementById('main-song'),
+        running: document.getElementById('run-sound'),
         shots: undefined,
         warningSong: undefined,
         rocket: undefined,
@@ -161,13 +162,13 @@ const Game = {
 
         this.createFrame()
 
-        //this.createCoins()
+        this.createCoins()
 
-        //this.createWarning()
+        this.createWarning()
 
         this.createObstacle()
 
-        //this.createWalker()
+        this.createWalker()
 
         this.audio.mainSong.play()
 
@@ -423,6 +424,8 @@ const Game = {
             this.player.position.y = this.canvas.baseLine
             this.player.speedY = 0
 
+            this.playRunAudio()
+
         } else {
 
             this.player.isTouchingFloor = false
@@ -439,6 +442,8 @@ const Game = {
                 this.player.isTouchingRoof = false
 
             }
+
+            this.stopRunAudio()
 
         }
 
@@ -1151,6 +1156,21 @@ const Game = {
         }
 
     },
+
+    //----- AUDIOS -----
+
+    playRunAudio() {
+
+        this.audio.running.play()
+
+    },
+
+    stopRunAudio() {
+
+        this.audio.running.pause()
+
+    },
+
 
 
     //----- EVENT HANDLERS -----
