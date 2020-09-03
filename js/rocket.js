@@ -103,6 +103,17 @@ class Warning {
 
             }
 
+            if (!this.gameContext.isGameOver) {
+
+                this.gameContext.audio.tracks.warningSong.play()
+
+            } else {
+
+                this.gameContext.audio.tracks.warningSong.pause()
+
+            }
+
+
 
         }, 3000)
 
@@ -115,6 +126,8 @@ class Warning {
             setTimeout(() => {
 
                 this.gameContext.createRocket(this)
+
+                this.gameContext.audio.tracks.rocketSong.play()
 
             }, 1000);
 

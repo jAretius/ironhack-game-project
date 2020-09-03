@@ -66,8 +66,8 @@ const Game = {
     walkersRandomTime: {
         minTime: undefined,
         maxTime: undefined,
-        minInicial: .05,
-        maxInicial: .1
+        minInicial: .01,
+        maxInicial: .3
     },
 
     rocketWarnings: [],
@@ -75,18 +75,34 @@ const Game = {
     rocketsRandomTime: {
         minTime: undefined,
         maxTime: undefined,
-        minInicial: .1,
-        maxInicial: .2
+        minInicial: 3,
+        maxInicial: 10
     },
 
     obstacles: [],
-    obstaclesCreationTime: .5,
+    obstaclesCreationTime: 4,
+    obstaclesRandomTime: {
+
+        minTime: undefined,
+        maxTime: undefined,
+        minInicial: .7,
+        maxInicial: 3
+
+    },
 
     lasers: [],
 
     coins: [],
     coinsRowAmount: 10,
-    coinsCreationTime: 7,  // Seconds
+    coinsCreationTime: 5,  // Seconds
+    coinsRandomTime: {
+
+        minTime: undefined,
+        maxTime: undefined,
+        minInicial: 1,
+        maxInicial: 4,
+
+    },
 
     speedPowerUp: undefined,
 
@@ -117,7 +133,7 @@ const Game = {
             electricitySong: new Audio('./audio/zag.mp3')
         },
 
-        overallVolume: .5
+        overallVolume: .15
 
 
     },
@@ -146,11 +162,17 @@ const Game = {
         this.background.gameOver = new Background(this.canvas, this.ctx, 0, this.time.FPS, 'gameOver')
 
         // Set random creation times
-        this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial
+        this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial  // Walkers
         this.walkersRandomTime.maxTime = this.walkersRandomTime.maxInicial
 
-        this.rocketsRandomTime.minTime = this.rocketsRandomTime.minInicial
+        this.rocketsRandomTime.minTime = this.rocketsRandomTime.minInicial  // Rockets
         this.rocketsRandomTime.maxTime = this.rocketsRandomTime.maxInicial
+
+        this.obstaclesRandomTime.minTime = this.obstaclesRandomTime.minInicial  // Obstacles
+        this.obstaclesRandomTime.maxTime = this.obstaclesRandomTime.maxInicial
+
+        this.coinsRandomTime.minTime = this.coinsRandomTime.minInicial
+        this.coinsRandomTime.maxTime = this.coinsRandomTime.maxInicial
 
         // We set the event listeners
         this.setEventHandlers()
@@ -195,9 +217,9 @@ const Game = {
 
         this.createCoins()
 
-        //this.createWarning()
+        this.createWarning()
 
-        //this.createObstacle()
+        this.createObstacle()
 
         this.createWalker()
 
@@ -277,10 +299,6 @@ const Game = {
 
     //----- CREATORS -----
 
-    createEnemies() {
-
-    },
-
     createCoins() {
 
         const randomShape = Math.floor(Math.random() * 3)
@@ -319,6 +337,8 @@ const Game = {
                 break;
         }
 
+        const randomValue = Math.random() * (this.coinsRandomTime.maxTime - this.coinsRandomTime.minTime) + this.coinsRandomTime.minTime
+
         this.timeOuts.coins = setTimeout(() => {
 
             for (let i = 0; i < this.coinsRowAmount; i++) {
@@ -331,7 +351,7 @@ const Game = {
 
             this.createCoins()
 
-        }, this.coinsCreationTime * 1000)
+        }, randomValue * 1000)
 
     },
 
@@ -345,7 +365,7 @@ const Game = {
 
     createWarning() {
 
-        const randomValue = Math.random() * (this.rocketsRandomTime.maxTime + 1) + this.rocketsRandomTime.minTime
+        const randomValue = Math.random() * (this.rocketsRandomTime.maxTime - this.rocketsRandomTime.minTime) + this.rocketsRandomTime.minTime
 
         this.timeOuts.rockets = setTimeout(() => {
 
@@ -380,12 +400,14 @@ const Game = {
 
     createObstacle() {
 
+        const randomValue = Math.random() * (this.obstaclesRandomTime.maxTime - this.obstaclesRandomTime.minTime) + this.obstaclesRandomTime.minTime
+
         this.timeOuts.obstacles = setTimeout(() => {
 
             this.obstacles.push(new Obstacle(this.canvas, this.ctx, this.time.FPS))
             this.createObstacle()
 
-        }, this.obstaclesCreationTime * 1000)
+        }, randomValue * 1000)
 
     },
 
@@ -489,7 +511,11 @@ const Game = {
             this.player.position.y = floorLimit
             this.player.speedY = 0
 
-            this.playRunAudio()
+            if (!this.player.isDead) {
+
+                this.playRunAudio()
+
+            }
 
         } else {
 
@@ -534,6 +560,16 @@ const Game = {
                 // We delete the coin
                 this.coins.splice(this.coins.indexOf(elm), 1)
 
+                // We play the audio                
+
+                if (this.audio.tracks.coinsSong.currentTime > .04) {
+
+                    this.audio.tracks.coinsSong.currentTime = 0
+
+                }
+
+                this.audio.tracks.coinsSong.play()
+
                 // We add a point
                 this.addPoints()
             }
@@ -557,12 +593,8 @@ const Game = {
                 playerSpaceData.posY < rocketsPosY + rocketsHeight &&
                 playerSpaceData.posY + playerSpaceData.height > rocketsPosY) {
 
-                this.player.isDead = true
                 this.destroyRocket(elm)
-
-                this.animateDead()
-
-                this.audio.tracks.mainSong.volume = .2
+                this.player.die()
 
             }
 
@@ -945,10 +977,6 @@ const Game = {
 
     },
 
-    drawEnemies() {
-
-    },
-
     drawPlayer() {
 
         if (!this.player.isDead && !this.player.isShocking) {
@@ -1269,6 +1297,8 @@ const Game = {
             this.walkersFront = []
             this.obstacles = []
 
+            this.audio.tracks.mainSong.volume /= 1.02
+
         }, 1000)
 
     },
@@ -1313,6 +1343,12 @@ const Game = {
             this.audio.tracks[elm].volume = this.audio.overallVolume
 
         })
+
+        this.audio.tracks.mainSong.volume = .2
+        this.audio.tracks.runFloorSong.volume = .1
+        this.audio.tracks.coinsSong.volume = .1
+        this.audio.tracks.warningSong.volume = .1
+
 
     },
 
@@ -1374,23 +1410,6 @@ const Game = {
             this.drawInitialBackground()
 
         }
-
-        // this.background.left.imageInstance.onload = () => {
-
-        //     this.drawBackgrond()
-
-        // }
-
-        // this.player.image.player.imageInstance.onload = () => {
-
-        //     setTimeout(() => {
-
-        //         this.drawPlayer()
-        //         this.drawScore()
-
-        //     }, 100)
-
-        // }
 
     },
 }

@@ -211,7 +211,7 @@ class JoyRoide {
 
     shock() {
 
-        this.gameCtx.audio.electricitySong.play()
+        this.gameCtx.audio.tracks.electricitySong.play()
 
         this.isShocking = true
 
@@ -220,10 +220,23 @@ class JoyRoide {
             //this.speedY = this.shockingSpeedY
 
             this.isShocking = false
-            this.isDead = true
             this.speedX = this.initialSpeedX
 
+            this.die()
+
         }, 200)
+
+    }
+
+    die() {
+
+        this.isShooting = false
+
+        this.isDead = true
+
+        this.forces.totalForce = 0 - this.forces.gravityForce
+
+        this.gameCtx.audio.tracks.shotsSong.pause()
 
     }
 
