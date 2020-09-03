@@ -4,6 +4,8 @@ class Obstacle {
         this.canvas = canvas
         this.FPS = FPS
 
+        this.obstacleType = undefined       // 0: small Vertical | 1: small horizontal | 2: large vertical | 3: large horizontal
+
         this.position = {
             x: canvas.size.width,
             y: (canvas.size.height / 2) - 20
@@ -24,12 +26,14 @@ class Obstacle {
             imageDiagonalDescendingPath: './images/obstacle6.png'
         }
 
+        this.collisionMargin = 40
+
         this.init()
     }
 
     init() {
 
-        const obstacleType = Math.floor(Math.random() * 4)
+        this.obstacleType = Math.floor(Math.random() * 4)
         this.image.imageInstance = new Image()
 
         let minPosY = undefined
@@ -37,7 +41,7 @@ class Obstacle {
         let randomPosY = undefined
 
         // We choose the imagePath depending on what random value we have (0, 1, 2, 3)
-        switch (obstacleType) {
+        switch (this.obstacleType) {
             case 0:
                 this.image.imageInstance.src = this.image.imageSmallVerticalPath //imageSmallVertical
                 this.size.width = 60

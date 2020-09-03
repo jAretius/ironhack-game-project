@@ -22,6 +22,8 @@ const Game = {
     },
     ctx: undefined,
 
+    isLoading: false,
+
     gameEngineInterval: undefined,
 
     // Time
@@ -161,6 +163,9 @@ const Game = {
 
         this.background.gameOver = new Background(this.canvas, this.ctx, 0, this.time.FPS, 'gameOver')
 
+        this.background.up = new Background(this.canvas, this.ctx, this.canvas.size.height, this.time.FPS, 'iron-up', this)
+        this.background.down = new Background(this.canvas, this.ctx, this.canvas.size.height, this.time.FPS, 'iron-down', this)
+
         // Set random creation times
         this.walkersRandomTime.minTime = this.walkersRandomTime.minInicial  // Walkers
         this.walkersRandomTime.maxTime = this.walkersRandomTime.maxInicial
@@ -211,6 +216,8 @@ const Game = {
 
     start() {
 
+        this.loadingScreen()
+
         this.reset()
 
         this.createFrame()
@@ -223,9 +230,7 @@ const Game = {
 
         this.createWalker()
 
-        this.normalizeAudio()
-
-        this.audio.tracks.mainSong.play()
+        this.initiateAudio()
 
     },
 
@@ -607,10 +612,11 @@ const Game = {
         // We check Obstacles collision
         this.obstacles.forEach(elm => {
 
-            const obstaclesPosX = elm.position.x
-            const obstaclesPosY = elm.position.y
-            const obstaclesWidth = elm.size.width
-            const obstaclesHeight = elm.size.height
+            let obstaclesPosX = elm.position.x + elm.collisionMargin
+            let obstaclesPosY = elm.position.y + elm.collisionMargin
+
+            let obstaclesWidth = elm.size.width - (elm.collisionMargin * 2)
+            let obstaclesHeight = elm.size.height - (elm.collisionMargin * 2)
 
             if (playerSpaceData.posX < obstaclesPosX + obstaclesWidth &&
                 playerSpaceData.posX + playerSpaceData.width > obstaclesPosX &&
@@ -819,6 +825,8 @@ const Game = {
 
         this.moveBackground()
 
+        this.moveLoadingScreen()
+
         this.movePlayer()
 
         // We move the bullets
@@ -855,7 +863,10 @@ const Game = {
 
     },
 
-    moveEnemies() {
+    moveLoadingScreen() {
+
+        this.background.up.move()
+        this.background.down.move()
 
     },
 
@@ -874,6 +885,8 @@ const Game = {
         })
 
     },
+
+    moveBulletShells() { },                                //EHhhhh!!! HEREEEE!!!!! 
 
     moveCoins() {
 
@@ -950,10 +963,17 @@ const Game = {
         this.drawWalkersBack()
         this.drawCoins()
         this.drawBullets()
+        this.drawBulleShells()                         //EH!!!!! HEREEEEEEEE!!!
         this.drawRockets()
         this.drawPlayer()
         this.drawWalkersFront()
         this.drawScore()
+
+        if (this.isLoading) {
+
+            this.drawLoadingScreen()
+
+        }
 
     },
 
@@ -973,7 +993,19 @@ const Game = {
 
     drawInitialBackground() {
 
-        this.ctx.drawImage(this.background.initial.imageInstance, 0, 0, this.canvas.size.width, this.canvas.size.height)
+        this.ctx.drawImage(
+            this.background.initial.imageInstance,
+            0,
+            0,
+            this.canvas.size.width,
+            this.canvas.size.height)
+
+    },
+
+    drawLoadingScreen() {
+
+        this.ctx.drawImage(this.background.up.imageInstance, 0, this.background.up.position.y, this.canvas.size.width, this.canvas.size.height / 2)
+        this.ctx.drawImage(this.background.down.imageInstance, 0, this.background.down.position.y, this.canvas.size.width, this.canvas.size.height / 2)
 
     },
 
@@ -1111,6 +1143,16 @@ const Game = {
                 elm.image.explosion.size.height)
 
         })
+    },
+
+    drawBulleShells() {
+
+        this.bulletShells.forEach(elm => {                  /// EHHHHHHHH!!! HEREEEEEEEE!!
+
+            this.ctx.drawImage(elm.image.imageInstance, elm.position.x, elm.position.y, elm.image.size.width, elm.image.size.height)
+
+        })
+
     },
 
     drawCoins() {
@@ -1303,6 +1345,15 @@ const Game = {
 
     },
 
+    //----- LOADING SCREEN -----
+
+    loadingScreen() {
+
+        this.isLoading = true
+
+    },
+
+
 
     //----- SCORE SYSTEM -----
     addPoints() {
@@ -1334,7 +1385,7 @@ const Game = {
 
     //----- AUDIOS -----
 
-    normalizeAudio() {
+    initiateAudio() {
 
         const tracksArray = Object.keys(this.audio.tracks)
 
@@ -1348,6 +1399,14 @@ const Game = {
         this.audio.tracks.runFloorSong.volume = .1
         this.audio.tracks.coinsSong.volume = .1
         this.audio.tracks.warningSong.volume = .1
+
+        this.audio.tracks.breakWallSong.play()
+
+        setTimeout(() => {
+
+            this.audio.tracks.mainSong.play()
+
+        }, 1000)
 
 
     },
@@ -1412,4 +1471,13 @@ const Game = {
         }
 
     },
+
+    linearTransition(initialX, initialY, finalX, finalY, currentX) {
+
+        const slope = (initialY - finalY) / (initialX - finalX)
+        const n = initialY - (slope * initialX)
+
+        return slope * currentX + n
+
+    }
 }

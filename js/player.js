@@ -203,9 +203,10 @@ class JoyRoide {
     shoot() {
 
         const newBullet = new Bullet(this.canvas, this.ctx, this.FPS, this.position, this.gameCtx)
-
         this.gameCtx.bullets.push(newBullet)
-        //this.bullets.push(newBullet)
+
+        const newShell = new BulletShell(this.canvas, this.ctx, this.FPS, this.position, this.gameCtx)
+        this.gameCtx.bulletShells.push(newShell)
 
     }
 
@@ -221,6 +222,7 @@ class JoyRoide {
 
             this.isShocking = false
             this.speedX = this.initialSpeedX
+            this.speedY = this.shockingSpeedY
 
             this.die()
 
