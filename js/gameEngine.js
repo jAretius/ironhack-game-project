@@ -220,17 +220,21 @@ const Game = {
 
         this.reset()
 
+        this.initiateAudio()
+
         this.createFrame()
 
-        this.createCoins()
+        setTimeout(() => {
 
-        this.createWarning()
+            this.createCoins()
 
-        this.createObstacle()
+            this.createWarning()
 
-        this.createWalker()
+            this.createObstacle()
 
-        this.initiateAudio()
+            this.createWalker()
+
+        }, 1500);
 
     },
 
@@ -242,8 +246,8 @@ const Game = {
 
         this.gameEngineInterval = setInterval(() => {
 
-            if (!this.isGameOver) {
 
+            if (!this.isGameOver) {
 
 
                 // Player shooting
@@ -467,6 +471,10 @@ const Game = {
         this.playerCollision()
 
         this.bulletsCollision()
+
+        this.checkShellsOut()
+
+        this.checkCoinsOut()
 
         this.checkCoinsOut()
         this.checkRocketsOut()
@@ -746,6 +754,22 @@ const Game = {
 
     },
 
+    checkShellsOut() {
+
+        this.bulletShells.forEach(elm => {
+
+            if (elm.position.x + elm.size.width <= 0 || elm.position.y >= this.canvas.size.height) {
+
+                const index = this.bulletShells.indexOf(elm)
+
+                this.bulletShells.splice(index, 1)
+
+            }
+
+        })
+
+    },
+
     checkCoinsOut() {
 
         if (this.coins.length) {
@@ -830,11 +854,10 @@ const Game = {
         this.movePlayer()
 
         // We move the bullets
-        if (this.bullets.length) {
 
-            this.moveBullets()
+        this.moveBullets()
 
-        }
+        this.moveBulletShells()
 
         this.moveCoins()
 
@@ -886,7 +909,15 @@ const Game = {
 
     },
 
-    moveBulletShells() { },                                //EHhhhh!!! HEREEEE!!!!! 
+    moveBulletShells() {
+
+        this.bulletShells.forEach((elm) => {
+
+            elm.move(this.player.speedX)
+
+        })
+
+    },                                //EHhhhh!!! HEREEEE!!!!! 
 
     moveCoins() {
 
@@ -1147,9 +1178,48 @@ const Game = {
 
     drawBulleShells() {
 
+        // this.bulletShells.forEach(elm => {                  /// EHHHHHHHH!!! HEREEEEEEEE!!
+
+        //     this.ctx.drawImage(
+        //         elm.image.imageInstance,
+        //         elm.image.frameIndex * (elm.image.imageInstance.width / elm.image.frames),
+        //         0,
+        //         elm.image.imageInstance.width / elm.image.frames,
+        //         elm.image.imageInstance.height,
+        //         elm.position.x,
+        //         elm.position.y,
+        //         elm.size.width,
+        //         elm.size.height)
+
+        // })
+
+
         this.bulletShells.forEach(elm => {                  /// EHHHHHHHH!!! HEREEEEEEEE!!
 
-            this.ctx.drawImage(elm.image.imageInstance, elm.position.x, elm.position.y, elm.image.size.width, elm.image.size.height)
+            if (this.time.framesCount % (this.time.FPS * this.bulletShells[0].image.spriteChangeTime) === 0) {
+
+                if (elm.image.frameIndex !== 7) {
+
+                    elm.image.frameIndex++
+
+                } else {
+
+                    elm.image.frameIndex = 0
+
+                }
+
+            }
+
+            this.ctx.drawImage(
+                elm.image.imageInstance,
+                elm.image.frameIndex * (elm.image.imageInstance.width / elm.image.frames),
+                0,
+                elm.image.imageInstance.width / elm.image.frames,
+                elm.image.imageInstance.height,
+                elm.position.x,
+                elm.position.y,
+                elm.size.width,
+                elm.size.height)
 
         })
 
