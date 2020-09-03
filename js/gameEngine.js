@@ -75,18 +75,20 @@ const Game = {
     rocketsRandomTime: {
         minTime: undefined,
         maxTime: undefined,
-        minInicial: 1,
-        maxInicial: 2
+        minInicial: .1,
+        maxInicial: .2
     },
 
     obstacles: [],
-    obstaclesCreationTime: 5,
+    obstaclesCreationTime: .5,
 
     lasers: [],
 
     coins: [],
     coinsRowAmount: 10,
     coinsCreationTime: 7,  // Seconds
+
+    speedPowerUp: undefined,
 
     background: {
         left: undefined,
@@ -103,16 +105,20 @@ const Game = {
 
     audio: {
 
-        breakWallSong: document.getElementById('break-wall'),
-        mainSong: document.getElementById('main-song'),
-        runFloorSong: document.getElementById('runfloor'),
-        shotsSong: document.getElementById('shooting'),
-        coinsSong: document.getElementById('coins'),
-        warningSong: document.getElementById('warning'),
-        rocketSong: document.getElementById('rocket'),
-        electricitySong: document.getElementById('zag'),
+        tracks: {
 
-        speedPowerUp: undefined
+            breakWallSong: new Audio('./audio/break-wall.mp3'),
+            mainSong: new Audio('./audio/jetpack-main.wav'),
+            runFloorSong: new Audio('./audio/runfloor.mp3'),
+            shotsSong: new Audio('./audio/shooting.mp3'),
+            coinsSong: new Audio('./audio/coins.mp3'),
+            warningSong: new Audio('./audio/warning.mp3'),
+            rocketSong: new Audio('./audio/rocket.mp3'),
+            electricitySong: new Audio('./audio/zag.mp3')
+        },
+
+        overallVolume: .5
+
 
     },
 
@@ -167,11 +173,6 @@ const Game = {
         // We clear async behaviour
         clearInterval(this.gameEngineInterval)
 
-        clearTimeout(this.timeOuts.rockets)
-        clearTimeout(this.timeOuts.coins)
-        clearTimeout(this.timeOuts.walkers)
-        clearTimeout(this.timeOuts.obstacles)
-
         // We reset values
         this.isGameOver = false
         this.distanceDone = 0
@@ -192,15 +193,17 @@ const Game = {
 
         this.createFrame()
 
-        //this.createCoins()
+        this.createCoins()
 
-        this.createWarning()
+        //this.createWarning()
 
         //this.createObstacle()
 
-        //this.createWalker()
+        this.createWalker()
 
-        this.audio.mainSong.play()
+        this.normalizeAudio()
+
+        this.audio.tracks.mainSong.play()
 
     },
 
@@ -258,7 +261,6 @@ const Game = {
                 }
 
                 this.time.isFirstFrame = false
-
 
 
             } else {
@@ -448,10 +450,29 @@ const Game = {
 
     playerCollision() {
 
-        const playerPosX = this.player.position.x
-        const playerPosY = this.player.position.y
-        const playerWidth = this.player.size.collisionWidth + 25
-        const playerHeight = this.player.size.collisionHeight + 25
+        const playerSpaceData = {
+            posX: this.player.position.x,
+            posY: this.player.position.y,
+            width: this.player.size.collisionWidth + 25,
+            height: this.player.size.collisionHeight + 25
+
+        }
+
+        if (!this.player.isDead) {
+
+            this.playerCoinsCollision(playerSpaceData)
+
+            this.playerRocketsCollision(playerSpaceData)
+
+            this.playerObstaclesCollision(playerSpaceData)
+
+        }
+
+        this.playerLimitsCollision(playerSpaceData)
+
+    },
+
+    playerLimitsCollision(playerSpaceData) {
 
         let floorLimit = this.canvas.baseLine
 
@@ -462,7 +483,7 @@ const Game = {
         }
 
         // Floor collision
-        if (playerPosY >= floorLimit) {
+        if (playerSpaceData.posY >= floorLimit) {
 
             this.player.isTouchingFloor = true
             this.player.position.y = floorLimit
@@ -475,7 +496,7 @@ const Game = {
             this.player.isTouchingFloor = false
 
             // Roof collision
-            if (playerPosY <= this.canvas.highLine) {
+            if (playerSpaceData.posY <= this.canvas.highLine) {
 
                 this.player.isTouchingRoof = true
                 this.player.position.y = this.canvas.highLine
@@ -491,6 +512,10 @@ const Game = {
 
         }
 
+    },
+
+    playerCoinsCollision(playerSpaceData) {
+
         // Coins collision
         this.coins.forEach((elm => {
 
@@ -501,10 +526,10 @@ const Game = {
 
 
             // We check if is invading the coin area
-            if (playerPosX < coinPosX + coinWidth &&
-                playerPosX + playerWidth > coinPosX &&
-                playerPosY < coinPosY + coinHeight &&
-                playerPosY + playerHeight > coinPosY) {
+            if (playerSpaceData.posX < coinPosX + coinWidth &&
+                playerSpaceData.posX + playerSpaceData.width > coinPosX &&
+                playerSpaceData.posY < coinPosY + coinHeight &&
+                playerSpaceData.posY + playerSpaceData.height > coinPosY) {
 
                 // We delete the coin
                 this.coins.splice(this.coins.indexOf(elm), 1)
@@ -515,6 +540,9 @@ const Game = {
 
         }))
 
+    },
+
+    playerRocketsCollision(playerSpaceData) {
 
         // We check Rockets Colision
         this.rockets.forEach(elm => {
@@ -524,21 +552,25 @@ const Game = {
             const rocketsWidth = elm.size.width
             const rocketsHeight = elm.size.height
 
-            if (playerPosX < rocketsPosX + rocketsWidth &&
-                playerPosX + playerWidth > rocketsPosX &&
-                playerPosY < rocketsPosY + rocketsHeight &&
-                playerPosY + playerHeight > rocketsPosY) {
+            if (playerSpaceData.posX < rocketsPosX + rocketsWidth &&
+                playerSpaceData.posX + playerSpaceData.width > rocketsPosX &&
+                playerSpaceData.posY < rocketsPosY + rocketsHeight &&
+                playerSpaceData.posY + playerSpaceData.height > rocketsPosY) {
 
                 this.player.isDead = true
                 this.destroyRocket(elm)
 
                 this.animateDead()
 
-                this.audio.mainSong.volume = .2
+                this.audio.tracks.mainSong.volume = .2
 
             }
 
         })
+
+    },
+
+    playerObstaclesCollision(playerSpaceData) {
 
         // We check Obstacles collision
         this.obstacles.forEach(elm => {
@@ -548,19 +580,18 @@ const Game = {
             const obstaclesWidth = elm.size.width
             const obstaclesHeight = elm.size.height
 
-            if (playerPosX < obstaclesPosX + obstaclesWidth &&
-                playerPosX + playerWidth > obstaclesPosX &&
-                playerPosY < obstaclesPosY + obstaclesHeight &&
-                playerPosY + playerHeight > obstaclesPosY) {
+            if (playerSpaceData.posX < obstaclesPosX + obstaclesWidth &&
+                playerSpaceData.posX + playerSpaceData.width > obstaclesPosX &&
+                playerSpaceData.posY < obstaclesPosY + obstaclesHeight &&
+                playerSpaceData.posY + playerSpaceData.height > obstaclesPosY) {
 
-                console.log('Electrocudado!!!')
-                this.gameOver()
+                this.player.shock()
             }
 
         })
 
-
     },
+
 
     bulletsCollision() {
 
@@ -920,7 +951,7 @@ const Game = {
 
     drawPlayer() {
 
-        if (!this.player.isDead) {
+        if (!this.player.isDead && !this.player.isShocking) {
 
             if (!this.player.isShooting) {
 
@@ -997,6 +1028,17 @@ const Game = {
                 (this.player.gunFire.size.width * 2) / this.player.image.gunFire.frames,
                 this.player.gunFire.size.height)
 
+        } else if (this.player.isShocking) {    // Shocking
+
+            this.ctx.drawImage(
+                this.player.image.playerElectric.imageInstance,
+                this.player.position.x,
+                this.player.position.y,
+                this.player.size.width / 2,
+                this.player.size.height
+
+            )
+
         } else {
 
             this.ctx.drawImage(
@@ -1007,14 +1049,6 @@ const Game = {
                 this.player.size.width / 1.8,
                 this.player.size.height / 1.8
             )
-
-            // this.ctx.drawImage(
-            //     this.player.image.playerDead.imageInstance,
-
-            //     200,
-            //     200,
-            //     200,
-            //     200)
 
         }
 
@@ -1208,7 +1242,7 @@ const Game = {
         this.player.isShooting = false
         this.player.forces.totalForce = 0 - this.player.forces.gravityForce
 
-        this.audio.shotsSong.pause()
+        this.audio.track.shotsSong.pause()
 
     },
 
@@ -1217,20 +1251,25 @@ const Game = {
 
     gameOver() {
 
-
         setTimeout(() => {
 
             this.isGameOver = true
 
+            // We stop the automatic creation
+            clearTimeout(this.timeOuts.rockets)
+            clearTimeout(this.timeOuts.coins)
+            clearTimeout(this.timeOuts.walkers)
+            clearTimeout(this.timeOuts.obstacles)
+
             // We empty all the arrays
-            this.rockets = []
             this.rocketWarnings = []
+            this.rockets = []
             this.coins = []
             this.walkersBack = []
             this.walkersFront = []
             this.obstacles = []
 
-        }, 1000);
+        }, 1000)
 
     },
 
@@ -1265,15 +1304,27 @@ const Game = {
 
     //----- AUDIOS -----
 
+    normalizeAudio() {
+
+        const tracksArray = Object.keys(this.audio.tracks)
+
+        tracksArray.forEach(elm => {
+
+            this.audio.tracks[elm].volume = this.audio.overallVolume
+
+        })
+
+    },
+
     playRunAudio() {
 
-        this.audio.runFloorSong.play()
+        this.audio.tracks.runFloorSong.play()
 
     },
 
     stopRunAudio() {
 
-        this.audio.runFloorSong.pause()
+        this.audio.tracks.runFloorSong.pause()
 
     },
 
@@ -1292,12 +1343,13 @@ const Game = {
 
                     this.player.isShooting = true
                     this.player.forces.totalForce = this.player.forces.shootingForce - this.gravityForce
-                    this.audio.shotsSong.play()
+
+                    // We play the shot audio
+                    this.audio.tracks.shotsSong.play()
 
                 }
 
             }
-
 
         }
 
@@ -1308,7 +1360,7 @@ const Game = {
                 this.player.isShooting = false
                 this.player.forces.totalForce = 0 - this.player.forces.gravityForce
 
-                this.audio.shotsSong.pause()
+                this.audio.tracks.shotsSong.pause()
 
             }
 

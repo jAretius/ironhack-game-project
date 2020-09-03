@@ -95,9 +95,14 @@ class Warning {
 
         setTimeout(() => {
 
-            this.image.frameIndex = 1
-            this.isAboutToShoot = true
-            this.shootRocket()
+            if (!this.gameContext.isGameOver) {
+
+                this.image.frameIndex = 1
+                this.isAboutToShoot = true
+                this.shootRocket()
+
+            }
+
 
         }, 3000)
 
@@ -105,11 +110,15 @@ class Warning {
 
     shootRocket() {
 
-        setTimeout(() => {
+        if (!this.gameContext.isGameOver) {
 
-            this.gameContext.createRocket(this)
+            setTimeout(() => {
 
-        }, 1000);
+                this.gameContext.createRocket(this)
+
+            }, 1000);
+
+        }
 
     }
 

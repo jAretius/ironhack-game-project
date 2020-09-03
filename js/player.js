@@ -30,6 +30,7 @@ class JoyRoide {
         // Physics
         this.speedX = undefined
         this.speedY = 0
+        this.shockingSpeedY = 5
         this.initialSpeedX = 7
 
         this.forces = {
@@ -58,6 +59,8 @@ class JoyRoide {
             }
 
         }
+
+        this.isShocking = false
 
         this.isDead = false
 
@@ -143,6 +146,15 @@ class JoyRoide {
 
     move() {
 
+        // If is shocking
+        if (this.isShocking) {
+
+            this.speedX = 0
+            return
+
+        }
+
+        // For sliding when is dead in the floor
         if (this.isDead && this.isTouchingFloor) {
 
             if (this.speedX <= 0) {
@@ -194,6 +206,24 @@ class JoyRoide {
 
         this.gameCtx.bullets.push(newBullet)
         //this.bullets.push(newBullet)
+
+    }
+
+    shock() {
+
+        this.gameCtx.audio.electricitySong.play()
+
+        this.isShocking = true
+
+        setTimeout(() => {
+
+            //this.speedY = this.shockingSpeedY
+
+            this.isShocking = false
+            this.isDead = true
+            this.speedX = this.initialSpeedX
+
+        }, 200)
 
     }
 
