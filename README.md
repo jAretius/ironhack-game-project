@@ -14,7 +14,6 @@ Joining this game in your local machine is so easy. Just follow the steps below:
 
  ```
   git clone https://github.com/jAretius/ironhack-game-project.git
-
   ```
 
 ### Prerequisites
@@ -30,8 +29,8 @@ Actually this game doesn't need an instalation. Just open the index.html file on
 ## Built With
 
 * [Visual Studio Code](https://code.visualstudio.com/) - Code editor used
+* [Canvas HTML](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 
 ## Authors
 
 * **Sergio Baltanás** & **Jon Arechalde**
-

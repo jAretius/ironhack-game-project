@@ -95,9 +95,6 @@ class Background {
 
         } else if (this.gameCtx.isLoading) {        // Movement for transition screen
 
-            console.log('Helloooo')
-
-
             const closeStartTime = 0
             const closeEndTime = this.loadingTransitionTime
             const waitStartTime = closeEndTime
