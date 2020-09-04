@@ -22,7 +22,9 @@ const Game = {
     },
     ctx: undefined,
 
+    isPlaying: false,
     isLoading: false,
+    isGameOver: false,
 
     gameEngineInterval: undefined,
 
@@ -112,7 +114,7 @@ const Game = {
         left: undefined,
         right: undefined,
         initial: undefined,
-        gameOver: undefined
+        gameOver: undefined,
     },
 
     // Game points system   
@@ -139,8 +141,6 @@ const Game = {
 
 
     },
-
-    isGameOver: false,
 
 
     //----- INITIALIZE METHODS -----    
@@ -200,12 +200,14 @@ const Game = {
         // We clear async behaviour
         clearInterval(this.gameEngineInterval)
 
-        // We reset values
+        // We reset values    
         this.isGameOver = false
         this.distanceDone = 0
         this.collectedCoins = 0
         this.player.isDead = false
         this.time.framesCount = 0
+        this.background.up.loadingTransitionCurrentTime = 0
+        this.background.down.loadingTransitionCurrentTime = 0
 
         this.player.speedX = this.player.initialSpeedX
 
@@ -222,6 +224,9 @@ const Game = {
 
         this.initiateAudio()
 
+
+
+
         this.createFrame()
 
         setTimeout(() => {
@@ -234,7 +239,7 @@ const Game = {
 
             this.createWalker()
 
-        }, 1500);
+        }, 1500)
 
     },
 
@@ -244,63 +249,57 @@ const Game = {
     createFrame() {
 
 
+
         this.gameEngineInterval = setInterval(() => {
 
+            // Player shooting
+            if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
+
+                this.player.shoot()
+
+            }
+
+            // We calculate the new position of all the elements
 
             if (!this.isGameOver) {
 
-
-                // Player shooting
-                if (this.player.isShooting && this.player.fireTime % this.player.fireFrequency === 0) {
-
-                    this.player.shoot()
-
-                }
-
-                // We calculate the new position of all the elements
                 this.moveAll()
 
-                // Check collisions
-                this.checkAllCollisions()
+            }
 
-                // Move game elements
-                this.clearAll()
+            // Check collisions
+            this.checkAllCollisions()
 
-                // We draw all
-                this.drawAll()
+            // Move game elements
+            this.clearAll()
 
-                // We add distance
-                this.addDistance()
+            // We draw all
+            this.drawAll()
 
-                // We update the counters
+            // We add distance
+            this.addDistance()
 
-                // Frames counter
-                this.time.framesCount++
+            // We update the counters
 
-                // Shooting time counter
-                if (this.player.isShooting) {
+            // Frames counter
+            this.time.framesCount++
 
-                    this.player.fireTime++
+            // Shooting time counter
+            if (this.player.isShooting) {
 
-                }
-
-                // Frames count reseter
-                if (this.time.framesCount === 6000) {
-
-                    this.time.framesCount = 0
-
-                }
-
-                this.time.isFirstFrame = false
-
-
-            } else {
-
-                this.clearAll()
-                this.drawGameOver()
-                this.drawScore()
+                this.player.fireTime++
 
             }
+
+            // Frames count reseter
+            if (this.time.framesCount === 6000) {
+
+                this.time.framesCount = 0
+
+            }
+
+            this.time.isFirstFrame = false
+
         }, 1000 / this.time.FPS)
 
     },
@@ -772,52 +771,40 @@ const Game = {
 
     checkCoinsOut() {
 
-        if (this.coins.length) {
+        this.coins.forEach(elm => {
 
-            this.coins.forEach(elm => {
+            if (elm.position.x + elm.size.width <= 0) {
 
-                if (elm.position.x + elm.size.width <= 0) {
+                const index = this.coins.indexOf(elm)
 
-                    const index = this.coins.indexOf(elm)
+                this.coins.splice(index, 1)
 
-                    this.coins.splice(index, 1)
+            }
 
-                }
-
-            })
-
-        }
+        })
 
     },
 
     checkRocketsOut() {
 
-        if (this.rockets.length) {
+        this.rockets.forEach(elm => {
 
-            this.rockets.forEach(elm => {
+            if (elm.position.x + elm.size.width <= 0) {
 
-
-
-                if (elm.position.x + elm.size.width <= 0) {
-
-                    this.destroyRocket(elm)
-                }
-            })
-        }
+                this.destroyRocket(elm)
+            }
+        })
     },
 
     checkObstaclesOut() {
 
-        if (this.obstacles.length) {
+        this.obstacles.forEach(elm => {
 
-            this.obstacles.forEach(elm => {
+            if (elm.position.x + elm.size.width <= 0) {
 
-                if (elm.position.x + elm.size.width <= 0) {
-
-                    this.destroyObstacle(elm)
-                }
-            })
-        }
+                this.destroyObstacle(elm)
+            }
+        })
 
     },
 
@@ -852,8 +839,6 @@ const Game = {
         this.moveLoadingScreen()
 
         this.movePlayer()
-
-        // We move the bullets
 
         this.moveBullets()
 
@@ -994,17 +979,14 @@ const Game = {
         this.drawWalkersBack()
         this.drawCoins()
         this.drawBullets()
-        this.drawBulleShells()                         //EH!!!!! HEREEEEEEEE!!!
+        this.drawBulleShells()
         this.drawRockets()
         this.drawPlayer()
         this.drawWalkersFront()
         this.drawScore()
-
-        if (this.isLoading) {
-
-            this.drawLoadingScreen()
-
-        }
+        this.drawInitialBackground()
+        this.drawGameOver()
+        this.drawLoadingScreen()
 
     },
 
@@ -1017,26 +999,41 @@ const Game = {
 
     drawBackgrond() {
 
-        this.ctx.drawImage(this.background.left.imageInstance, this.background.left.position.x, 0, this.canvas.size.width, this.canvas.size.height)
-        this.ctx.drawImage(this.background.right.imageInstance, this.background.right.position.x, 0, this.canvas.size.width, this.canvas.size.height)
+        if (this.isPlaying) {
+
+            this.ctx.drawImage(this.background.left.imageInstance, this.background.left.position.x, 0, this.canvas.size.width, this.canvas.size.height)
+            this.ctx.drawImage(this.background.right.imageInstance, this.background.right.position.x, 0, this.canvas.size.width, this.canvas.size.height)
+
+        }
+
 
     },
 
     drawInitialBackground() {
 
-        this.ctx.drawImage(
-            this.background.initial.imageInstance,
-            0,
-            0,
-            this.canvas.size.width,
-            this.canvas.size.height)
+        if (!this.isPlaying) {
+
+            this.ctx.drawImage(
+                this.background.initial.imageInstance,
+                0,
+                0,
+                this.canvas.size.width,
+                this.canvas.size.height)
+
+        }
+
 
     },
 
     drawLoadingScreen() {
 
-        this.ctx.drawImage(this.background.up.imageInstance, 0, this.background.up.position.y, this.canvas.size.width, this.canvas.size.height / 2)
-        this.ctx.drawImage(this.background.down.imageInstance, 0, this.background.down.position.y, this.canvas.size.width, this.canvas.size.height / 2)
+        if (this.isLoading) {
+
+            this.ctx.drawImage(this.background.up.imageInstance, 0, this.background.up.position.y, this.canvas.size.width, this.canvas.size.height / 2)
+            this.ctx.drawImage(this.background.down.imageInstance, 0, this.background.down.position.y, this.canvas.size.width, this.canvas.size.height / 2)
+
+        }
+
 
     },
 
@@ -1373,7 +1370,12 @@ const Game = {
 
     drawGameOver() {
 
-        this.ctx.drawImage(this.background.gameOver.imageInstance, 0, 0, this.canvas.size.width, this.canvas.size.height)
+        if (this.isGameOver) {
+
+            this.ctx.drawImage(this.background.gameOver.imageInstance, 0, 0, this.canvas.size.width, this.canvas.size.height)
+
+        }
+
 
     },
 
@@ -1391,9 +1393,11 @@ const Game = {
 
     gameOver() {
 
+        this.isGameOver = true
+
         setTimeout(() => {
 
-            this.isGameOver = true
+            this.isPlaying = false
 
             // We stop the automatic creation
             clearTimeout(this.timeOuts.rockets)
@@ -1502,7 +1506,7 @@ const Game = {
         // Controls
         window.onkeypress = (e) => {
 
-            if (!this.player.isDead) {
+            if (!this.player.isDead && this.isPlaying) {
 
                 if (e.keyCode === this.keys.SPACE) {
 

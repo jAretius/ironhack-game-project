@@ -161,6 +161,7 @@ class JoyRoide {
 
                 this.speedX = 0
 
+
                 this.gameCtx.gameOver()
 
             } else {

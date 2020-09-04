@@ -26,13 +26,13 @@ class Background {
 
         this.imagePathGameOver = './images/game-over.jpg'
 
-        this.imagePathTransitionUp = './images/iron-up-dark.png'
-        this.imagePathTrasitionDown = './images/iron-down-dark.png'
+        this.imagePathTransitionUp = './images/iron-up-blue-yellow.png'
+        this.imagePathTrasitionDown = './images/iron-down-blue-yellow.png'
 
         this.loadingTransitionTime = .5
-        this.loadingTransitionWaitTime = 1.2
+        this.loadingTransitionWaitTime = 1.3
         this.loadingTransitionCurrentTime = 0
-        this.loadingTransitionMultiplier = 1
+        this.loadingTransitionState = 'close'
 
         this.backgroundType = backgroundType
 
@@ -85,81 +85,6 @@ class Background {
 
     }
 
-    // move(playerSpeed) {
-
-    //     // Movement for regular background
-    //     if (this.backgroundType !== 'iron-up' && this.backgroundType !== 'iron-down') {
-
-    //         const compesatedSpeed = ((60 / this.FPS) * playerSpeed)
-    //         this.position.x -= compesatedSpeed
-
-    //     } else {        // Movement for transition screen
-
-    //         let initialPosY = undefined
-    //         let finalPosY = undefined
-
-    //         if (this.loadingTransitionMultiplier === 1) {
-
-    //             if (this.backgroundType === 'iron-up') {
-
-    //                 initialPosY = -this.size.height
-    //                 finalPosY = 0
-
-    //             } else {
-
-    //                 initialPosY = this.size.height * 2
-    //                 finalPosY = this.size.height
-
-    //             }
-
-    //         } else {
-
-    //             if (this.backgroundType === 'iron-up') {
-
-    //                 initialPosY = 0
-    //                 finalPosY = -this.size.height
-
-    //             } else {
-
-    //                 initialPosY = this.size.height
-    //                 finalPosY = this.size.height * 2
-
-    //             }
-
-    //         }
-
-    //         this.gameCtx.linearTransition(0, initialPosY, this.loadingTransitionTime, finalPosY, this.loadingTransitionCurrentTime)
-
-    //         if (this.loadingTransitionCurrentTime >= this.loadingTransitionTime) {
-
-    //             this.position.y = this.finalPosY
-
-    //         }
-
-    //         this.loadingTransitionCurrentTime += 1 / (this.loadingTransitionTime * 60)
-
-    //         // 
-    //         if (this.loadingTransitionCurrentTime >= this.loadingTransitionTime + this.loadingTransitionWaitTime) {
-
-    //             if (this.loadingTransitionMultiplier === -1) {
-
-    //                 this.gameCtx.isLoading = false
-    //                 this.loadingTransitionMultiplier = 1
-
-    //             } else {
-
-    //                 this.loadingTransitionMultiplier = -1
-
-    //             }
-
-    //             this.loadingTransitionCurrentTime = 0
-
-    //         }
-
-    //     }
-
-    // }
-
     move(playerSpeed) {
 
         // Movement for regular background
@@ -168,93 +93,94 @@ class Background {
             const compesatedSpeed = ((60 / this.FPS) * playerSpeed)
             this.position.x -= compesatedSpeed
 
-        } else {        // Movement for transition screen
+        } else if (this.gameCtx.isLoading) {        // Movement for transition screen
 
-            let pendiente = undefined
-
-            if (this.loadingTransitionMultiplier === 1) {       // Transition first movement
-
-                if (this.loadingTransitionTime > this.loadingTransitionCurrentTime) {
-
-                    if (this.backgroundType === 'iron-up') {
-
-                        this.position.y = this.gameCtx.linearTransition(0, -this.size.height, this.loadingTransitionTime, 0, this.loadingTransitionCurrentTime)
-
-                    } else {
-
-                        this.position.y = this.gameCtx.linearTransition(0, this.size.height * 2, this.loadingTransitionTime, this.size.height, this.loadingTransitionCurrentTime)
-
-                    }
+            console.log('Helloooo')
 
 
-                } else {
+            const closeStartTime = 0
+            const closeEndTime = this.loadingTransitionTime
+            const waitStartTime = closeEndTime
+            const waitEndTime = waitStartTime + this.loadingTransitionWaitTime
+            const openStartTime = waitEndTime
+            const openEndTime = openStartTime + this.loadingTransitionTime
 
-                    if (this.backgroundType === 'iron-up') {
+            const currentTime = this.loadingTransitionCurrentTime
 
-                        this.position.y = 0
+            let initialPosY = undefined
+            let finalPosY = undefined
 
-                    } else {
+            if (currentTime < closeEndTime) {       // Close animation
 
-                        this.position.y = this.size.height
+                if (this.backgroundType === 'iron-up') {
 
-                    }
-
-                }
-
-
-
-            } else {            // Transition second movement
-
-                if (this.loadingTransitionTime > this.loadingTransitionCurrentTime) {
-
-                    if (this.backgroundType === 'iron-up') {
-
-                        this.position.y = this.gameCtx.linearTransition(0, 0, this.loadingTransitionTime, -this.size.height, this.loadingTransitionCurrentTime)
-
-                    } else {
-
-                        this.position.y = this.gameCtx.linearTransition(0, this.size.height, this.loadingTransitionTime, this.size.height * 2, this.loadingTransitionCurrentTime)
-
-                    }
-
+                    initialPosY = -this.size.height
+                    finalPosY = 0
 
                 } else {
 
-                    if (this.backgroundType === 'iron-up') {
-
-                        this.position.y = -this.size.height
-
-                    } else {
-
-                        this.position.y = this.size.height * 2
-
-                    }
+                    initialPosY = this.size.height * 2
+                    finalPosY = this.size.height
 
                 }
+
+                this.position.y = this.gameCtx.linearTransition(closeStartTime, initialPosY, closeEndTime, finalPosY, currentTime)
+
+            } else if (currentTime >= waitStartTime && currentTime <= waitEndTime) {        // Waiting time
+
+                if (this.backgroundType === 'iron-up') {
+
+                    this.position.y = 0
+
+                } else {
+
+                    this.position.y = this.size.height
+
+                }
+
+            } else if (currentTime < openEndTime) {         // Open animation
+
+                this.gameCtx.isPlaying = true
+                this.gameCtx.isGameOver = false
+
+
+                if (this.backgroundType === 'iron-up') {
+
+                    initialPosY = 0
+                    finalPosY = -this.size.height
+
+                } else {
+
+                    initialPosY = this.size.height
+                    finalPosY = this.size.height * 2
+
+                }
+
+                this.position.y = this.gameCtx.linearTransition(openStartTime, initialPosY, openEndTime, finalPosY, currentTime)
+
+            } else {
+
+                if (this.backgroundType === 'iron-up') {
+
+                    this.position.y = -this.size.height
+
+                } else {
+
+                    this.position.y = this.size.height * 2
+
+                }
+
+                this.gameCtx.isLoading = false
+                this.loadingTransitionState = 'close'
+                this.loadingTransitionCurrentTime = 0
+
+                return
 
             }
 
             this.loadingTransitionCurrentTime += 1 / (this.loadingTransitionTime * 60)
-
-            // 
-            if (this.loadingTransitionCurrentTime >= this.loadingTransitionTime + this.loadingTransitionWaitTime) {
-
-                if (this.loadingTransitionMultiplier === -1) {
-
-                    this.gameCtx.isLoading = false
-                    this.loadingTransitionMultiplier = 1
-
-                } else {
-
-                    this.loadingTransitionMultiplier = -1
-
-                }
-
-                this.loadingTransitionCurrentTime = 0
-
-            }
-
         }
+
 
     }
 

@@ -11,16 +11,11 @@ window.onload = function () {
 
         document.getElementById("start-button").disabled = true
 
-        if (!Game.isGameOver) {
-
-            Game.start();
-
-        } else {
+        if (!Game.isPlaying) {
 
             Game.start()
 
         }
-
 
     };
 
